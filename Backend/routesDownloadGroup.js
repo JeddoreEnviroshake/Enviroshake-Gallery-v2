@@ -1,13 +1,10 @@
-// routesDownloadGroup.js
-
 const express = require("express");
 const AWS = require("aws-sdk");
 const archiver = require("archiver");
 
 const admin = require("firebase-admin");
 
-// ✅ DO NOT call initializeApp() here
-const db = admin.firestore(); // Safe to use because initialized in server.js
+const db = admin.firestore();
 
 const router = express.Router();
 
