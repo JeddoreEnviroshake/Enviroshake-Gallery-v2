@@ -246,7 +246,7 @@ export default function UploadPage() {
       }}>
         <form onSubmit={handleSubmit} style={{
           width: "100%",
-          maxWidth: "540px",
+          maxWidth: "480px",
           background: "#fff",
           border: "1px solid #e3e3e3",
           borderRadius: "12px",
