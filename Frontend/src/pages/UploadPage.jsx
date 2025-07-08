@@ -251,7 +251,7 @@ export default function UploadPage() {
           border: "1px solid #e3e3e3",
           borderRadius: "12px",
           padding: "2.3rem 2rem 2rem 2rem",
-          boxShadow: "0 3px 16px 0 rgba(30,36,56,0.11)"
+          boxShadow: "0 4px 20px 0 rgba(30,36,56,0.15)"
         }}>
           <h3 style={{ textAlign: "center", marginBottom: "2rem", color: "#09713c", fontWeight: "bold" }}>Upload a New Image</h3>
           <div style={{ marginBottom: "1.0rem" }}>
