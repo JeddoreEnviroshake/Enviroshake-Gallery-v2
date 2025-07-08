@@ -236,7 +236,7 @@ export default function UploadPage() {
 </div>
 
       <div style={{
-        marginTop: "35px",
+        marginTop: "20px",
         padding: "2rem 0",
         display: "flex",
         flexDirection: "column",
