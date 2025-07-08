@@ -412,18 +412,16 @@ export default function GalleryPage() {
       {/* ====== NAV BAR ====== */}
       <div
         style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
+          width: "100vw",
           backgroundColor: "#09713c",
           color: "white",
-          padding: "1rem 2rem",
+          height: "64px",
           display: "flex",
-          justifyContent: "space-between",
           alignItems: "center",
+          position: "relative",
           zIndex: 1000,
-          boxSizing: "border-box",
+          justifyContent: "space-between",
+          padding: 0,
         }}
       >
         <div
@@ -437,7 +435,10 @@ export default function GalleryPage() {
             height: "300%",
           }}
         >
-          <Link to="/dashboard" style={{ display: "flex", alignItems: "center", height: "100%" }}>
+          <Link
+            to="/dashboard"
+            style={{ display: "flex", alignItems: "center", height: "100%" }}
+          >
             <img
               src="/enviroshake-gallery/Enviroshake_logo/Enviroshake_white_logo.png"
               alt="Enviroshake Logo"
@@ -450,7 +451,18 @@ export default function GalleryPage() {
             />
           </Link>
         </div>
-        <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: "bold", textAlign: "center", flexGrow: 1 }}>Photo Gallery</h2>
+        <div
+          style={{
+            flex: 1,
+            textAlign: "center",
+            fontWeight: "bold",
+            fontSize: "1.45rem",
+            letterSpacing: ".01em",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Photo Gallery
+        </div>
         <div
           style={{
             flex: 1,
@@ -467,9 +479,11 @@ export default function GalleryPage() {
               background: "white",
               color: "#09713c",
               border: "none",
-              padding: "0.4rem 0.8rem",
-              borderRadius: "4px",
+              padding: "0.33rem 1rem",
+              borderRadius: "8px",
               fontWeight: "bold",
+              fontSize: "1.01rem",
+              boxShadow: "none",
               cursor: "pointer",
             }}
           >
