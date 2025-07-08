@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import GalleryPage from "./pages/GalleryPage";
-import UploadPage from "./pages/UploadPage"; // FIXED: use UploadPage here
+import UploadPage from "./pages/UploadPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardPage from "./pages/DashboardPage";
 
@@ -29,7 +29,7 @@ function App() {
         path="/upload"
         element={
           <ProtectedRoute>
-            <UploadPage />  {/* FIXED: Use UploadPage, NOT ImageUpload */}
+            <UploadPage />
           </ProtectedRoute>
         }
       />
