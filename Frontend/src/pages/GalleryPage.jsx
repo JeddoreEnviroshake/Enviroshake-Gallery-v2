@@ -492,7 +492,7 @@ export default function GalleryPage() {
         </div>
       </div>
       {/* ====== FILTERS & SEARCH ====== */}
-      <div style={{ marginTop: "100px", padding: "2rem" }}>
+      <div style={{ marginTop: "1rem", padding: "2rem" }}>
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginBottom: "1rem", gap: "0.5rem" }}>
           <button onClick={clearAllFilters} style={{ padding: "0.5rem 1rem", borderRadius: "6px", fontWeight: "bold", border: "none", backgroundColor: "#f3f3f3" }}>
             Clear Filters
