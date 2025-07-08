@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Select from "react-select";
-import { COLOR_OPTIONS } from "../constants/colorOptions";
+import { COLOR_OPTIONS } from "../Constants/colorOptions";
 import { db, auth } from "../services/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
@@ -28,7 +28,7 @@ export default function UploadPage() {
   const [countryTags, setCountryTags] = useState([]);
   const [notes, setNotes] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [internalOnly, setInternalOnly] = useState(false); // CHANGED: internalOnly
+  const [internalOnly, setInternalOnly] = useState(false);
   const [projectName, setProjectName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
@@ -47,17 +47,14 @@ export default function UploadPage() {
     setSelectedFiles(Array.from(e.target.files));
   };
 
-  // Group ID and group name (used as the group/folder label)
   const groupId = [
     productLine?.value || "—",
     selectedColors[0]?.value || "—",
     projectName || "—"
   ].join("_");
 
-  // Name Preview for the "first" file (for preview)
   const namePreview = `${groupId}_001`;
 
-  // Helper for file extension
   const getFileExt = (fileName) => {
     if (!fileName) return "";
     const idx = fileName.lastIndexOf(".");
@@ -68,7 +65,6 @@ export default function UploadPage() {
     e.preventDefault();
     setMessage("");
 
-    // Only require: files, productLine, at least 1 color, projectName
     if (!selectedFiles.length || !productLine || selectedColors.length === 0 || !projectName) {
       alert("Please select at least one image, product line, one color, and project name.");
       return;
@@ -80,17 +76,16 @@ export default function UploadPage() {
     setUploading(true);
 
     try {
-      // 1. Save the group metadata ONCE
       await addDoc(collection(db, "imageGroups"), {
         groupId,
         groupName: groupId,
         colors: selectedColors.map((c) => c.value),
         productLine: productLine.value,
-        roofTags: roofTags.map((r) => r.value),       // optional
-        projectTags: projectTags.map((p) => p.value), // optional
-        countryTags: countryTags.map((c) => c.value), // optional
+          roofTags: roofTags.map((r) => r.value),
+          projectTags: projectTags.map((p) => p.value),
+          countryTags: countryTags.map((c) => c.value),
         notes,
-        internalOnly, // SAVE internalOnly to group
+        internalOnly,
         uploadedBy: userEmail,
         timestamp: serverTimestamp(),
         imageCount: selectedFiles.length,
@@ -103,7 +98,6 @@ export default function UploadPage() {
         const imgNum = (i + 1).toString().padStart(3, "0");
         const generatedName = `${groupId}_${imgNum}`;
 
-        // Get signed URL
         const res = await fetch("http://localhost:4000/generate-upload-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -132,7 +126,7 @@ export default function UploadPage() {
           notes,
           projectName,
           imageName: generatedName,
-          internalOnly, // SAVE internalOnly to image
+          internalOnly,
           s3Key: key,
           uploadedBy: userEmail,
           timestamp: serverTimestamp(),
@@ -160,22 +154,20 @@ export default function UploadPage() {
 
   return (
     <>
-      {/* GREEN NAV BAR */}
-  <div
+      <div
   style={{
     width: "100vw",
     backgroundColor: "#09713c",
     color: "white",
-    height: "64px",           // Fixed height for nav bar
+    height: "64px",
     display: "flex",
     alignItems: "center",
     position: "relative",
     zIndex: 1000,
     justifyContent: "space-between",
-    padding: 0                // No vertical padding so logo fills nav
+    padding: 0
   }}
 >
-  {/* Logo on the left */}
   <div style={{
     flex: 1,
     display: "flex",
@@ -183,13 +175,13 @@ export default function UploadPage() {
     justifyContent: "flex-start",
     minWidth: 0,
     paddingLeft: "2rem",
-    height: "300%"           // Fills nav bar height
+    height: "300%"
   }}>
     <img
       src="/enviroshake-gallery/Enviroshake_logo/Enviroshake_white_logo.png"
       alt="Enviroshake Logo"
       style={{
-        maxHeight: "100%",    // Stretches up to nav bar height
+        maxHeight: "100%",
         height: "100%",
         width: "auto",
         display: "block"
@@ -197,7 +189,6 @@ export default function UploadPage() {
     />
   </div>
 
-  {/* Center title */}
   <div style={{
     flex: 1,
     textAlign: "center",
@@ -209,7 +200,6 @@ export default function UploadPage() {
     Upload Images
   </div>
 
-  {/* Logout button on the right */}
   <div style={{
     flex: 1,
     display: "flex",
@@ -237,7 +227,6 @@ export default function UploadPage() {
   </div>
 </div>
 
-      {/* FORM */}
       <div style={{
         marginTop: "35px",
         padding: "2rem 0",

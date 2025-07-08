@@ -13,7 +13,7 @@ import {
 import { db, auth } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import Select from "react-select";
-import { COLOR_OPTIONS } from "../constants/colorOptions";
+import { COLOR_OPTIONS } from "../Constants/colorOptions";
 import { Modal } from 'react-responsive-modal';
 import 'react-responsive-modal/styles.css';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -198,7 +198,7 @@ export default function GalleryPage() {
     !!(groupMeta?.internalOnly || groupMeta?.doNotUse || firstImage?.internalOnly || firstImage?.doNotUse);
 
   // Download handlers
-  const downloadGroup = async (groupId, groupMeta, firstImage) => {
+  const downloadGroup = async (groupId) => {
     try {
       const res = await fetch(`http://localhost:4000/download-group/${groupId}`);
       if (!res.ok) throw new Error("Failed to generate ZIP");
@@ -216,7 +216,7 @@ export default function GalleryPage() {
     }
   };
 
-  const downloadSingleImage = (img, groupMeta) => {
+  const downloadSingleImage = (img) => {
     const url = `${BUCKET_URL}/${img.s3Key}`;
     const link = document.createElement("a");
     link.href = url;
@@ -264,7 +264,6 @@ export default function GalleryPage() {
 
   const handleModalImageDownload = () => {
     if (!modalImage) return;
-    let groupMeta = modalImage.groupMeta;
     if (modalImage.groupImages && modalImage.groupImages.length > 1) {
       const img = modalImage.groupImages[modalIndex];
       const url = `${BUCKET_URL}/${img.s3Key}`;
@@ -720,7 +719,7 @@ export default function GalleryPage() {
               onSlideChange={(swiper) => setModalIndex(swiper.activeIndex)}
               style={{ width: '100%', height: '380px', marginBottom: 16 }}
             >
-              {modalImage.groupImages.map((img, idx) => (
+              {modalImage.groupImages.map((img) => (
                 <SwiperSlide key={img.id}>
                   <div style={{ position: "relative", width: "100%", height: "100%" }}>
                     <img
@@ -938,7 +937,6 @@ export default function GalleryPage() {
           )}
         </div>
       </Modal>
-      {/* --- DELETE AND EDIT MODALS UNCHANGED --- */}
       <Modal open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} center>
         <div style={{ padding: "2rem", textAlign: "center" }}>
           {deleteTarget?.type === "group" ? (
@@ -967,7 +965,6 @@ export default function GalleryPage() {
           ) : null}
         </div>
       </Modal>
-      {/* --- EDIT MODAL UNCHANGED --- */}
       <Modal open={editModalOpen} onClose={() => setEditModalOpen(false)} center styles={{
         modal: { padding: '2rem', minWidth: 350, maxWidth: 480, borderRadius: 10 }
       }}>
