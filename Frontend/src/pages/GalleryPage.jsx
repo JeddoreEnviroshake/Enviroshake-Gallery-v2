@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   collection,
   query,
-  where,
   onSnapshot,
   orderBy,
   doc,
@@ -97,7 +96,6 @@ export default function GalleryPage() {
     if (!userEmail) return;
     const q = query(
       collection(db, "images"),
-      where("uploadedBy", "==", userEmail),
       orderBy("timestamp", "desc")
     );
     const unsubscribe = onSnapshot(q, async (snapshot) => {
