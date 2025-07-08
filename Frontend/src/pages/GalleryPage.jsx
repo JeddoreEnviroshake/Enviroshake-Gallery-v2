@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   collection,
   query,
@@ -425,12 +426,52 @@ export default function GalleryPage() {
           boxSizing: "border-box",
         }}
       >
-        <div style={{ width: "120px" }} />
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            minWidth: 0,
+            paddingLeft: "2rem",
+            height: "300%",
+          }}
+        >
+          <Link to="/dashboard" style={{ display: "flex", alignItems: "center", height: "100%" }}>
+            <img
+              src="/enviroshake-gallery/Enviroshake_logo/Enviroshake_white_logo.png"
+              alt="Enviroshake Logo"
+              style={{
+                maxHeight: "100%",
+                height: "100%",
+                width: "auto",
+                display: "block",
+              }}
+            />
+          </Link>
+        </div>
         <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: "bold", textAlign: "center", flexGrow: 1 }}>Photo Gallery</h2>
-        <div>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            paddingRight: "2rem",
+            height: "100%",
+          }}
+        >
           <button
             onClick={() => auth.signOut()}
-            style={{ background: "white", color: "#09713c", border: "none", padding: "0.4rem 0.8rem", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+            style={{
+              background: "white",
+              color: "#09713c",
+              border: "none",
+              padding: "0.4rem 0.8rem",
+              borderRadius: "4px",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
           >
             Logout
           </button>
