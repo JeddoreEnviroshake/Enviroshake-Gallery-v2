@@ -516,13 +516,14 @@ export default function GalleryPage() {
           </button>
         </div>
         {/* FILTERS */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", maxWidth: "960px", margin: "0 auto" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem" }}>
           <Select isMulti placeholder="Filter by Product Line" options={makeOptions(OPTIONS.productLines)} value={productLineFilter} onChange={setProductLineFilter} />
           <Select isMulti placeholder="Filter by Colors" options={makeOptions(COLOR_OPTIONS)} value={colorFilter} onChange={setColorFilter} />
           <Select isMulti placeholder="Filter by Roof Tags" options={makeOptions(OPTIONS.roofTags)} value={roofTagFilter} onChange={setRoofTagFilter} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap" }}>
           <Select isMulti placeholder="Filter by Project Type" options={makeOptions(OPTIONS.projectTypes)} value={projectTypeFilter} onChange={setProjectTypeFilter} />
           <Select isMulti placeholder="Filter by Country" options={makeOptions(OPTIONS.countries)} value={countryFilter} onChange={setCountryFilter} />
-          <Select placeholder="Filter by Group ID" options={allGroupIds.map(id => ({ value: id, label: id }))} value={groupFilter ? { value: groupFilter, label: groupFilter } : null} onChange={(opt) => setGroupFilter(opt ? opt.value : "")} isClearable />
         </div>
         {/* ====== GALLERY CARDS ====== */}
         <div style={{
