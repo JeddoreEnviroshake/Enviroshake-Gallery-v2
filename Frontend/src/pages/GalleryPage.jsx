@@ -555,6 +555,8 @@ export default function GalleryPage() {
                         transition: "all 0.15s",
                         boxShadow: internalOnly ? "none" : "0 1px 4px #09713c12",
                         padding: "0.15rem 0.7rem", // SMALLER
+                        marginLeft: internalOnly ? "auto" : undefined,
+                        marginRight: internalOnly ? "auto" : undefined,
                       }}
                     >
                       {internalOnly && <FaLock style={{ marginRight: 4, color: "#aaa" }} />}
