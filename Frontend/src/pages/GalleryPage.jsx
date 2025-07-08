@@ -54,7 +54,6 @@ export default function GalleryPage() {
   const [projectTypeFilter, setProjectTypeFilter] = useState([]);
   const [countryFilter, setCountryFilter] = useState([]);
   const [groupFilter, setGroupFilter] = useState("");
-  const [expandedGroups, setExpandedGroups] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState(null);
@@ -699,29 +698,6 @@ export default function GalleryPage() {
                   </span>
                 </div>
 
-                {/* View All button or blank space, always takes up space */}
-                <div style={{
-                  minHeight: 35, marginBottom: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  {isGroup && groupImages.length > 1 ? (
-                    <button
-                      style={{
-                        fontSize: "1rem", background: expandedGroups[groupId] ? "#eee" : "#f3f3f3", border: "none",
-                        borderRadius: "5px", padding: "0.48rem 0.89rem", fontWeight: "bold", cursor: "pointer", minHeight: 33,
-                      }}
-                      onClick={() =>
-                        setExpandedGroups((prev) => ({
-                          ...prev,
-                          [groupId]: !prev[groupId],
-                        }))
-                      }
-                    >
-                      {expandedGroups[groupId] ? "Hide" : "View All"}
-                    </button>
-                  ) : (
-                    <span style={{ minHeight: 33, width: 85, display: "inline-block" }}></span>
-                  )}
-                </div>
 
                 {/* Name/footer */}
                 <div
