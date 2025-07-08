@@ -51,3 +51,38 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+
+/* Floating label styles */
+.floating-label {
+  position: relative;
+  width: 100%;
+}
+
+.floating-label input,
+.floating-label textarea {
+  width: 100%;
+  padding: 1.2rem 0.5rem 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  background: #fff;
+}
+
+.floating-label label {
+  position: absolute;
+  top: 0.9rem;
+  left: 0.5rem;
+  font-size: 1rem;
+  color: #666;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.floating-label input:focus + label,
+.floating-label input:not(:placeholder-shown) + label,
+.floating-label textarea:focus + label,
+.floating-label textarea:not(:placeholder-shown) + label {
+  top: 0.3rem;
+  font-size: 0.75rem;
+  color: #09713c;
+}
