@@ -512,7 +512,7 @@ export default function GalleryPage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "auto 1fr auto",
+                    gridTemplateColumns: "1fr auto 1fr",
                     alignItems: "center",
                     minHeight: 38,
                     marginBottom: 7,
@@ -520,7 +520,7 @@ export default function GalleryPage() {
                   }}
                 >
                   {/* Checkbox Left */}
-                  <div style={{ display: "flex", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
                     <input
                       type="checkbox"
                       style={{ width: 22, height: 22, accentColor: "#09713c", cursor: "pointer" }}
@@ -574,6 +574,7 @@ export default function GalleryPage() {
                       color: "#ec6f33",
                       display: "flex",
                       alignItems: "center",
+                      justifySelf: "end",
                     }}
                     className="edit-pencil-btn"
                   >✏️</button>
