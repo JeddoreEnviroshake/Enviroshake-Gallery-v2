@@ -169,16 +169,21 @@ export default function UploadPage() {
     padding: 0
   }}
 >
-  <div style={{
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "flex-start",
-    minWidth: 0,
-    paddingLeft: "2rem",
-    height: "300%"
-  }}>
-    <Link to="/dashboard">
+  <div
+    style={{
+      flex: 1,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "flex-start",
+      minWidth: 0,
+      paddingLeft: "2rem",
+      height: "300%",
+    }}
+  >
+    <Link
+      to="/dashboard"
+      style={{ display: "flex", alignItems: "center", height: "100%" }}
+    >
       <img
         src="/enviroshake-gallery/Enviroshake_logo/Enviroshake_white_logo.png"
         alt="Enviroshake Logo"
@@ -186,7 +191,7 @@ export default function UploadPage() {
           maxHeight: "100%",
           height: "100%",
           width: "auto",
-          display: "block"
+          display: "block",
         }}
       />
     </Link>
