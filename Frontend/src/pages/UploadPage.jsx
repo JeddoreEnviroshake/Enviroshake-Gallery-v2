@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import Select from "react-select";
 import { COLOR_OPTIONS } from "../Constants/colorOptions";
 import { db, auth } from "../services/firebase";
@@ -177,16 +178,18 @@ export default function UploadPage() {
     paddingLeft: "2rem",
     height: "300%"
   }}>
-    <img
-      src="/enviroshake-gallery/Enviroshake_logo/Enviroshake_white_logo.png"
-      alt="Enviroshake Logo"
-      style={{
-        maxHeight: "100%",
-        height: "100%",
-        width: "auto",
-        display: "block"
-      }}
-    />
+    <Link to="/dashboard">
+      <img
+        src="/enviroshake-gallery/Enviroshake_logo/Enviroshake_white_logo.png"
+        alt="Enviroshake Logo"
+        style={{
+          maxHeight: "100%",
+          height: "100%",
+          width: "auto",
+          display: "block"
+        }}
+      />
+    </Link>
   </div>
 
   <div style={{
