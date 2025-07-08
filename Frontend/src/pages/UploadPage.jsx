@@ -34,6 +34,7 @@ export default function UploadPage() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -46,6 +47,28 @@ export default function UploadPage() {
 
   const handleFileChange = (e) => {
     setSelectedFiles(Array.from(e.target.files));
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length) {
+      setSelectedFiles(Array.from(e.dataTransfer.files));
+    }
   };
 
   const groupId = [
@@ -244,15 +267,22 @@ export default function UploadPage() {
         minHeight: "80vh",
         background: "#fafcfa"
       }}>
-        <form onSubmit={handleSubmit} style={{
-          width: "100%",
-          maxWidth: "480px",
-          background: "#fff",
-          border: "1px solid #e3e3e3",
-          borderRadius: "12px",
-          padding: "2.3rem 2rem 2rem 2rem",
-          boxShadow: "0 4px 20px 0 rgba(30,36,56,0.15)"
-        }}>
+        <form
+          onSubmit={handleSubmit}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          style={{
+            width: "100%",
+            maxWidth: "480px",
+            background: dragOver ? "#f4faf5" : "#fff",
+            border: dragOver ? "2px dashed #09713c" : "1px solid #e3e3e3",
+            borderRadius: "12px",
+            padding: "2.3rem 2rem 2rem 2rem",
+            boxShadow: "0 4px 20px 0 rgba(30,36,56,0.15)"
+          }}
+        >
           <h3 style={{ textAlign: "center", marginBottom: "2rem", color: "#09713c", fontWeight: "bold" }}>Upload a New Image</h3>
           <div style={{ marginBottom: "1.0rem" }}>
             <label style={{ fontWeight: 600, display: "block" }}>
