@@ -313,26 +313,20 @@ export default function UploadPage() {
 
           {/* Project Name */}
           <div style={{ marginBottom: "1.15rem" }}>
-            <label style={{ fontWeight: 600 }}>
-              Project Name:
-              <span style={{ color: "#e42" }}>*</span>
-            </label>
-            <input
-              type="text"
-              value={projectName}
-              onChange={e => setProjectName(e.target.value)}
-              placeholder="e.g. Heritage Manor"
-              style={{
-                display: "block",
-                width: "100%",
-                marginTop: 7,
-                fontSize: "1rem",
-                padding: "0.5rem",
-                borderRadius: 5,
-                border: "1px solid #e0e0e0"
-              }}
-              required
-            />
+            <div className="floating-label">
+              <input
+                id="projectName"
+                type="text"
+                value={projectName}
+                onChange={e => setProjectName(e.target.value)}
+                placeholder=" "
+                required
+              />
+              <label htmlFor="projectName" style={{ fontWeight: 600 }}>
+                Project Name:
+                <span style={{ color: "#e42" }}>*</span>
+              </label>
+            </div>
           </div>
 
           {/* Name Preview */}
@@ -412,14 +406,18 @@ export default function UploadPage() {
           </div>
 
           <div style={{ marginBottom: "1.2rem" }}>
-            <label style={{ fontWeight: 600 }}>Notes <span style={{ color: "#999", fontWeight: 400 }}>(optional):</span></label>
-            <textarea
-              rows={3}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Enter any notes..."
-              style={{ width: "100%", padding: "0.5rem", fontSize: "1rem", borderRadius: "5px", border: "1px solid #e0e0e0" }}
-            />
+            <div className="floating-label">
+              <textarea
+                id="notes"
+                rows={3}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder=" "
+              />
+              <label htmlFor="notes" style={{ fontWeight: 600 }}>
+                Notes <span style={{ color: "#999", fontWeight: 400 }}>(optional):</span>
+              </label>
+            </div>
           </div>
 
           <button
