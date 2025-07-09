@@ -702,7 +702,7 @@ export default function GalleryPage() {
                 {/* Name/footer */}
                 <div
                   style={{
-                    fontWeight: 700, fontSize: "1.24rem", marginTop: 7, color: "#135b37", letterSpacing: ".01em",
+                    fontWeight: 400, fontSize: "1.24rem", marginTop: 7, color: "#135b37", letterSpacing: ".01em",
                     textAlign: "center", borderTop: "1px solid #e6e6e6", paddingTop: 10, minHeight: 36, lineHeight: 1.2, marginBottom: 0, overflowWrap: "anywhere", background: "#fff",
                   }}
                 >
@@ -737,7 +737,7 @@ export default function GalleryPage() {
       }}>
         {modalImage && modalImage.groupImages && modalImage.groupImages.length > 1 ? (
           <div style={{ textAlign: 'center', padding: '1.5rem 1.5rem 0 1.5rem', maxWidth: 880 }}>
-            <div style={{ marginBottom: '0.7rem', fontWeight: 500 }}>
+            <div style={{ marginBottom: '0.7rem', fontWeight: 400 }}>
               <div>{modalImage?.groupMeta?.groupName || modalImage?.groupId || ""}</div>
               <div style={{ fontSize: "0.96em", color: "#666" }}>
                 {modalIndex + 1} of {modalImage.groupImages.length}
@@ -837,7 +837,7 @@ export default function GalleryPage() {
           </div>
         ) : modalImage ? (
           <div style={{ textAlign: 'center', padding: '2rem 2rem 0 2rem', maxWidth: 780 }}>
-            <div style={{ marginBottom: '1rem', fontWeight: 500 }}>
+            <div style={{ marginBottom: '1rem', fontWeight: 400 }}>
               {modalImage?.groupMeta?.groupName || modalImage?.groupId || ""}
               <div style={{ fontSize: "0.95em", color: "#666" }}>{modalImage?.groupMeta?.timestamp?.toDate ? modalImage.groupMeta.timestamp.toDate().toLocaleString() : "-"}</div>
             </div>
@@ -974,7 +974,7 @@ export default function GalleryPage() {
         <div style={{ padding: "2rem", textAlign: "center" }}>
           {deleteTarget?.type === "group" ? (
             <>
-              <div style={{ fontWeight: 700, marginBottom: 8, fontSize: "1.2rem" }}>
+              <div style={{ fontWeight: 400, marginBottom: 8, fontSize: "1.2rem" }}>
                 Delete group <span style={{ color: "#be3131" }}>{deleteTarget.groupName}</span>?
               </div>
               <div style={{ color: "#be3131", fontWeight: 500, marginBottom: 20 }}>
@@ -986,7 +986,7 @@ export default function GalleryPage() {
             </>
           ) : deleteTarget?.type === "photo" ? (
             <>
-              <div style={{ fontWeight: 700, marginBottom: 8 }}>
+              <div style={{ fontWeight: 400, marginBottom: 8 }}>
                 Delete photo <span style={{ color: "#be3131" }}>{deleteTarget.photoName}</span>?
               </div>
               <div style={{ color: "#be3131", fontWeight: 500, marginBottom: 20 }}>
