@@ -162,3 +162,29 @@ button:focus-visible {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   background: #f3f3f3;
 }
+
+/* Filters/search container */
+.filter-container {
+  background: #f9f9f9;
+  margin-top: 1rem;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.07);
+}
+
+.filter-container .search-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.2rem;
+}
+
+.filter-container .filter-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  margin-bottom: 1.2rem;
+}
