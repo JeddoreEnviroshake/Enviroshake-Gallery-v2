@@ -529,6 +529,7 @@ export default function GalleryPage() {
           marginTop: "2rem",
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",
+          gridAutoRows: "1fr",
           gap: "1.2rem",
         }}>
           {paginatedGroupIds.map((groupId) => {
@@ -557,7 +558,7 @@ export default function GalleryPage() {
                   boxSizing: "border-box",
                   position: "relative",
                   overflow: "hidden",
-                  minHeight: 410,
+                  height: 410,
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "flex-start",
@@ -637,8 +638,7 @@ export default function GalleryPage() {
 
                 {/* Internal Only Row */}
                 <div style={{
-                  minHeight: 24,
-                  margin: "4px 0",
+                  margin: internalOnly ? "4px 0" : 0,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -658,15 +658,25 @@ export default function GalleryPage() {
                 {/* Main image */}
                 <div
                   style={{
-                    position: "relative", flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-                    minHeight: 150, maxHeight: 150, marginBottom: 7,
+                    position: "relative",
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
+                    marginBottom: 7,
                   }}
                 >
                   <img
                     src={`${BUCKET_URL}/${firstImage.s3Key}`}
                     alt="Group Thumbnail"
                     style={{
-                      width: "100%", height: "150px", objectFit: "cover", borderRadius: "8px", cursor: "pointer", background: "#f3f3f3",
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      background: "#f3f3f3",
                     }}
                     onClick={() =>
                       openModal({
@@ -702,8 +712,21 @@ export default function GalleryPage() {
                 {/* Name/footer */}
                 <div
                   style={{
-                    fontWeight: 400, fontSize: "1.24rem", marginTop: 7, color: "#135b37", letterSpacing: ".01em",
-                    textAlign: "center", borderTop: "1px solid #e6e6e6", paddingTop: 10, minHeight: 36, lineHeight: 1.2, marginBottom: 0, overflowWrap: "anywhere", background: "#fff",
+                    fontWeight: 400,
+                    fontSize: "1.24rem",
+                    marginTop: 7,
+                    color: "#135b37",
+                    letterSpacing: ".01em",
+                    textAlign: "center",
+                    borderTop: "1px solid #e6e6e6",
+                    paddingTop: 10,
+                    lineHeight: 1.2,
+                    marginBottom: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    overflowWrap: "anywhere",
+                    background: "#fff",
                   }}
                 >
                   {displayName}
