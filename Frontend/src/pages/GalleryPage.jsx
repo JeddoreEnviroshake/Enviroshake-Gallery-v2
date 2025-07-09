@@ -659,7 +659,8 @@ export default function GalleryPage() {
                 <div
                   style={{
                     position: "relative",
-                    flex: 1,
+                    height: 160,
+                    width: "100%",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
