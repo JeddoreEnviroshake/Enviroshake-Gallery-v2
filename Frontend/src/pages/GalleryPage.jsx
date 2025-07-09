@@ -613,6 +613,8 @@ export default function GalleryPage() {
                         borderRadius: "11px",
                         opacity: internalOnly ? 0.6 : 1,
                         cursor: "pointer",
+                        marginLeft: "auto",
+                        marginRight: "auto",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
