@@ -652,14 +652,8 @@ export default function GalleryPage() {
                   <img
                     src={`${BUCKET_URL}/${firstImage.s3Key}`}
                     alt="Group Thumbnail"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      background: "#f3f3f3",
-                    }}
+                    className="gallery-thumbnail"
+                    style={{ cursor: "pointer" }}
                     onClick={() =>
                       openModal({
                         url: `${BUCKET_URL}/${firstImage.s3Key}`,
