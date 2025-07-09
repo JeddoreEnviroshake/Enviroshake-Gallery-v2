@@ -45,7 +45,7 @@ const OPTIONS = {
 const makeOptions = (arr) => arr.map(item => ({ label: item, value: item }));
 
 const formatImageName = (groupName, index) =>
-  `${groupName}_${String(index + 1).padStart(3, '0')}.jpg`;
+  `${groupName}_${String(index + 1).padStart(3, '0')}`;
 
 export default function GalleryPage() {
   const [images, setImages] = useState([]);
