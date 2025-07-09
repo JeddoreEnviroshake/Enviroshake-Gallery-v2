@@ -549,16 +549,15 @@ export default function GalleryPage() {
                 style={{
                   border: "1px solid #ccc",
                   borderRadius: "12px",
-                  padding: "1rem 1rem 0.5rem",
+                  padding: "1rem",
                   background: "#fff",
                   textAlign: "center",
                   boxSizing: "border-box",
                   position: "relative",
                   overflow: "hidden",
-                  height: 320,
+                  height: "100%",
                   display: "flex",
                   flexDirection: "column",
-                  justifyContent: "flex-start",
                 }}
               >
                 {/* --- Card Header: Checkbox, Download Center, Pencil Right --- */}
@@ -567,8 +566,8 @@ export default function GalleryPage() {
                     display: "grid",
                     gridTemplateColumns: "1fr auto 1fr",
                     alignItems: "center",
-                    minHeight: 38,
-                    marginBottom: 7,
+                    minHeight: 32,
+                    marginBottom: 6,
                     width: "100%",
                   }}
                 >
@@ -646,7 +645,7 @@ export default function GalleryPage() {
                     alignItems: "center",
                     justifyContent: "center",
                     overflow: "hidden",
-                    marginBottom: 7,
+                    marginBottom: 6,
                   }}
                 >
                   <img
@@ -689,8 +688,8 @@ export default function GalleryPage() {
                 <div
                   style={{
                     fontWeight: 400,
-                    fontSize: "1.24rem",
-                    marginTop: 4,
+                    fontSize: "1.1rem",
+                    marginTop: "auto",
                     color: "#135b37",
                     letterSpacing: ".01em",
                     textAlign: "center",
