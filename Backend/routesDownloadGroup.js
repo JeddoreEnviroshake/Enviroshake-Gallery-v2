@@ -1,7 +1,6 @@
 const express = require("express");
 const AWS = require("aws-sdk");
 const archiver = require("archiver");
-const path = require("path");
 
 const admin = require("firebase-admin");
 
@@ -34,7 +33,10 @@ router.get("/:groupId", async (req, res) => {
     const groupName = snapshot.docs[0].data().groupName || groupId;
 
     res.setHeader("Content-Type", "application/zip");
-    res.setHeader("Content-Disposition", `attachment; filename=${groupName}.zip`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${groupName}.zip"`
+    );
 
     const archive = archiver("zip", { zlib: { level: 9 } });
     archive.pipe(res);
@@ -48,9 +50,8 @@ router.get("/:groupId", async (req, res) => {
         .getObject({ Bucket: process.env.AWS_S3_BUCKET, Key: s3Key })
         .createReadStream();
 
-      const ext = path.extname(s3Key);
       const idxStr = index.toString().padStart(3, "0");
-      const fileName = `${groupName}_${idxStr}${ext}`;
+      const fileName = `${groupName}_${idxStr}.jpg`;
 
       archive.append(s3Stream, { name: `${folderName}${fileName}` });
       index += 1;
