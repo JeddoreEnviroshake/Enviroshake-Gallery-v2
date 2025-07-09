@@ -148,3 +148,14 @@ button:focus-visible {
   background: #e9e9e9;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
+
+/* Gallery thumbnail images */
+.gallery-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: #f3f3f3;
+}
