@@ -495,8 +495,8 @@ export default function GalleryPage() {
         </div>
       </div>
       {/* ====== FILTERS & SEARCH ====== */}
-      <div style={{ marginTop: "1rem", padding: "2rem" }}>
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginBottom: "1rem", gap: "0.5rem" }}>
+      <div className="filter-container">
+        <div className="search-row">
           <button onClick={clearAllFilters} style={{ padding: "0.5rem 1rem", borderRadius: "6px", fontWeight: "bold", border: "none", backgroundColor: "#f3f3f3" }}>
             Clear Filters
           </button>
@@ -509,19 +509,18 @@ export default function GalleryPage() {
           <button
             onClick={downloadSelected}
             className={`download-btn ${selectedCardIds.length ? "" : "disabled"}`}
-            style={{ marginLeft: "0.5rem" }}
             disabled={selectedCardIds.length === 0}
           >
             Download All
           </button>
         </div>
         {/* FILTERS */}
-        <div style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+        <div className="filter-row">
           <Select isMulti placeholder="Filter by Product Line" options={makeOptions(OPTIONS.productLines)} value={productLineFilter} onChange={setProductLineFilter} />
           <Select isMulti placeholder="Filter by Colors" options={makeOptions(COLOR_OPTIONS)} value={colorFilter} onChange={setColorFilter} />
           <Select isMulti placeholder="Filter by Roof Tags" options={makeOptions(OPTIONS.roofTags)} value={roofTagFilter} onChange={setRoofTagFilter} />
         </div>
-        <div style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap" }}>
+        <div className="filter-row">
           <Select isMulti placeholder="Filter by Project Type" options={makeOptions(OPTIONS.projectTypes)} value={projectTypeFilter} onChange={setProjectTypeFilter} />
           <Select isMulti placeholder="Filter by Country" options={makeOptions(OPTIONS.countries)} value={countryFilter} onChange={setCountryFilter} />
         </div>
