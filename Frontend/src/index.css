@@ -86,3 +86,15 @@ button:focus-visible {
   font-size: 0.75rem;
   color: #09713c;
 }
+
+/* Gallery card styles */
+.gallery-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease;
+}
+
+.gallery-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
