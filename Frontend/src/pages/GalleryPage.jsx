@@ -44,6 +44,9 @@ const OPTIONS = {
 
 const makeOptions = (arr) => arr.map(item => ({ label: item, value: item }));
 
+const formatImageName = (groupName, index) =>
+  `${groupName}_${String(index + 1).padStart(3, '0')}.jpg`;
+
 export default function GalleryPage() {
   const [images, setImages] = useState([]);
   const [groups, setGroups] = useState({});
@@ -299,7 +302,15 @@ export default function GalleryPage() {
     setDeleteModalOpen(true);
   }
   function handleDeletePhoto(photo) {
-    setDeleteTarget({ type: 'photo', photoId: photo.id, photoName: photo.imageName || photo.id });
+    const groupMeta = groups[photo.groupId];
+    const groupName = groupMeta?.groupName || photo.groupId || '';
+    let idx = 0;
+    if (photo.imageName) {
+      const m = photo.imageName.match(/_(\d+)$/);
+      if (m) idx = parseInt(m[1], 10) - 1;
+    }
+    const name = formatImageName(groupName, idx);
+    setDeleteTarget({ type: 'photo', photoId: photo.id, photoName: name });
     setDeleteModalOpen(true);
   }
   async function confirmDelete() {
@@ -538,13 +549,9 @@ export default function GalleryPage() {
             const groupMeta = groups[groupId];
             const isGroup = groupImages.length > 1 || groupMeta;
             const internalOnly = isInternalOnly(groupMeta, firstImage);
-            const displayName =
-              groupMeta?.groupName ||
-              (firstImage.imageName
-                ? firstImage.imageName
-                : isGroup
-                  ? groupId
-                  : groupId.replace("ungrouped-", ""));
+            const groupName = groupMeta?.groupName ||
+              (isGroup ? groupId : groupId.replace("ungrouped-", ""));
+            const displayName = formatImageName(groupName, 0);
             return (
               <div
                 key={groupId}
@@ -762,7 +769,7 @@ export default function GalleryPage() {
         {modalImage && modalImage.groupImages && modalImage.groupImages.length > 1 ? (
           <div style={{ textAlign: 'center', padding: '1.5rem 1.5rem 0 1.5rem', maxWidth: 880 }}>
             <div style={{ marginBottom: '0.7rem', fontWeight: 400 }}>
-              <div>{modalImage?.groupMeta?.groupName || modalImage?.groupId || ""}</div>
+              <div>{formatImageName(modalImage?.groupMeta?.groupName || modalImage?.groupId || "", modalIndex)}</div>
               <div style={{ fontSize: "0.96em", color: "#666" }}>
                 {modalIndex + 1} of {modalImage.groupImages.length}
                 {"  "} |  {modalImage?.groupMeta?.timestamp?.toDate ? modalImage.groupMeta.timestamp.toDate().toLocaleString() : "-"}
@@ -862,7 +869,7 @@ export default function GalleryPage() {
         ) : modalImage ? (
           <div style={{ textAlign: 'center', padding: '2rem 2rem 0 2rem', maxWidth: 780 }}>
             <div style={{ marginBottom: '1rem', fontWeight: 400 }}>
-              {modalImage?.groupMeta?.groupName || modalImage?.groupId || ""}
+              {formatImageName(modalImage?.groupMeta?.groupName || modalImage?.groupId || "", 0)}
               <div style={{ fontSize: "0.95em", color: "#666" }}>{modalImage?.groupMeta?.timestamp?.toDate ? modalImage.groupMeta.timestamp.toDate().toLocaleString() : "-"}</div>
             </div>
             <img
