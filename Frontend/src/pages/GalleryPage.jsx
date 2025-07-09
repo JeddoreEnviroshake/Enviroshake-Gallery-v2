@@ -411,13 +411,6 @@ export default function GalleryPage() {
         .delete-icon:hover, .card:hover .delete-icon {
           opacity: 1;
         }
-        .edit-pencil-btn {
-          font-size: 20px !important;
-          margin-left: 0;
-          margin-right: 0;
-          padding: 0;
-          line-height: 1;
-        }
       `}</style>
       {/* ====== NAV BAR ====== */}
       <div
@@ -515,11 +508,8 @@ export default function GalleryPage() {
           />
           <button
             onClick={downloadSelected}
-            style={{
-              padding: "0.5rem 1rem", borderRadius: "6px", fontWeight: "bold", border: "none",
-              backgroundColor: selectedCardIds.length ? "#09713c" : "#ccc",
-              color: "white", marginLeft: "0.5rem", cursor: selectedCardIds.length ? "pointer" : "not-allowed"
-            }}
+            className={`download-btn ${selectedCardIds.length ? "" : "disabled"}`}
+            style={{ marginLeft: "0.5rem" }}
             disabled={selectedCardIds.length === 0}
           >
             Download All
@@ -602,29 +592,17 @@ export default function GalleryPage() {
                           downloadSingleImage(firstImage, groupMeta);
                         }
                       }}
+                      className={`download-btn ${internalOnly ? "disabled" : ""}`}
                       style={{
-                        background: internalOnly ? "#f3f3f3" : "#fff",
-                        color: internalOnly ? "#bbb" : "#09713c",
-                        border: `2.5px solid ${internalOnly ? "#bbb" : "#09713c"}`,
-                        fontWeight: 700,
-                        fontSize: "0.98rem",   // SMALLER
-                        minWidth: 86,          // SMALLER
+                        fontSize: "0.98rem",
+                        minWidth: 86,
                         maxWidth: 90,
-                        borderRadius: "11px",
-                        opacity: internalOnly ? 0.6 : 1,
-                        cursor: "pointer",
+                        padding: "0.15rem 0.7rem",
                         marginLeft: "auto",
-                        marginRight: "auto",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "8px",
-                        transition: "all 0.15s",
-                        boxShadow: internalOnly ? "none" : "0 1px 4px #09713c12",
-                        padding: "0.15rem 0.7rem", // SMALLER
+                        marginRight: "auto"
                       }}
                     >
-                      {internalOnly && <FaLock style={{ marginRight: 4, color: "#aaa" }} />}
+                      {internalOnly && <FaLock style={{ marginRight: 4, color: "#888" }} />}
                       Download
                     </button>
                   </div>
@@ -632,17 +610,11 @@ export default function GalleryPage() {
                   <button
                     title="Edit Name and Tags"
                     onClick={() => openEditModal({ groupId, isGroup, groupMeta, firstImage })}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: "#ec6f33",
-                      display: "flex",
-                      alignItems: "center",
-                      justifySelf: "end",
-                    }}
                     className="edit-pencil-btn"
-                  >✏️</button>
+                    style={{ justifySelf: "end" }}
+                  >
+                    ✏️
+                  </button>
                 </div>
 
                 {/* Internal Only Row */}
@@ -831,18 +803,8 @@ export default function GalleryPage() {
             }}>
               <button
                 onClick={handleModalImageDownload}
-                style={{
-                  padding: "0.5rem 1rem",
-                  borderRadius: "6px",
-                  fontWeight: "bold",
-                  border: "none",
-                  backgroundColor: modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage.groupImages[modalIndex]) ? "#e4e4e4" : "#09713c",
-                  color: modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage.groupImages[modalIndex]) ? "#aaa" : "white",
-                  fontSize: "1rem",
-                  cursor: "pointer",
-                  opacity: modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage.groupImages[modalIndex]) ? 0.6 : 1,
-                  display: "flex", alignItems: "center", gap: 6
-                }}
+                className={`download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage.groupImages[modalIndex]) ? "disabled" : ""}`}
+                style={{ fontSize: "1rem" }}
               >
                 {isInternalOnly(modalImage.groupMeta, modalImage.groupImages[modalIndex]) && <FaLock style={{ marginRight: 4, color: "#888" }} />}
                 Download Image
@@ -894,14 +856,8 @@ export default function GalleryPage() {
             }}>
               <button
                 onClick={handleModalImageDownload}
-                style={{
-                  padding: "0.5rem 1rem", borderRadius: "6px", fontWeight: "bold", border: "none",
-                  backgroundColor: modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage) ? "#e4e4e4" : "#09713c",
-                  color: modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage) ? "#aaa" : "white",
-                  fontSize: "1rem", cursor: "pointer",
-                  opacity: modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage) ? 0.6 : 1,
-                  display: "flex", alignItems: "center", gap: 6
-                }}
+                className={`download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage) ? "disabled" : ""}`}
+                style={{ fontSize: "1rem" }}
               >
                 {isInternalOnly(modalImage.groupMeta, modalImage) && <FaLock style={{ marginRight: 4, color: "#888" }} />}
                 Download Image
