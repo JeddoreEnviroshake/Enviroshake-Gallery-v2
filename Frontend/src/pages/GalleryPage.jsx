@@ -558,7 +558,7 @@ export default function GalleryPage() {
                   boxSizing: "border-box",
                   position: "relative",
                   overflow: "hidden",
-                  height: 410,
+                  height: 320,
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "flex-start",
