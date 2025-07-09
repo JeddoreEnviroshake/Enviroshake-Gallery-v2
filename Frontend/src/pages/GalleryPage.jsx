@@ -555,7 +555,7 @@ export default function GalleryPage() {
             return (
               <div
                 key={groupId}
-                className="card"
+                className="card gallery-card"
                 style={{
                   border: "1px solid #ccc",
                   borderRadius: "12px",
