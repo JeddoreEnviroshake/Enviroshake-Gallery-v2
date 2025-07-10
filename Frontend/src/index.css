@@ -295,3 +295,43 @@ button:focus-visible {
 .thumbnail-row .thumbnail.selected {
   border-color: #09713c;
 }
+
+/* Modal action buttons */
+.photo-modal .modal-action-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 1rem;
+}
+
+.photo-modal .modal-download-btn {
+  background: #09713c;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.42rem 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.photo-modal .modal-download-btn.disabled {
+  background: #e4e4e4;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.photo-modal .modal-notes-btn {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0.42rem 1rem;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #09713c;
+  cursor: pointer;
+}
