@@ -18,6 +18,7 @@ const s3 = new AWS.S3({
 
 router.get("/:groupId", async (req, res) => {
   const { groupId } = req.params;
+  console.log(`Download group route called for groupId: ${groupId}`);
 
   try {
     const snapshot = await db
@@ -27,10 +28,12 @@ router.get("/:groupId", async (req, res) => {
       .get();
 
     if (snapshot.empty) {
+      console.log(`No images found for groupId: ${groupId}`);
       return res.status(404).json({ message: "No images found." });
     }
 
     const groupName = snapshot.docs[0].data().groupName || groupId;
+    console.log(`Found ${snapshot.size} images for group: ${groupName}`);
 
     res.setHeader("Content-Type", "application/zip");
     res.setHeader(
@@ -39,16 +42,38 @@ router.get("/:groupId", async (req, res) => {
     );
 
     const archive = archiver("zip", { zlib: { level: 9 } });
+    archive.on("error", (archiveErr) => {
+      console.error("Archiver error:", archiveErr);
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Archive generation failed." });
+      }
+    });
     archive.pipe(res);
+
+    res.on("error", (streamErr) => {
+      console.error("Response streaming error:", streamErr);
+    });
 
     const folderName = `${groupName}/`;
     let index = 1;
 
     for (const doc of snapshot.docs) {
       const { s3Key } = doc.data();
+      console.log(`Processing S3 key: ${s3Key}`);
+
       const s3Stream = s3
         .getObject({ Bucket: process.env.AWS_S3_BUCKET, Key: s3Key })
         .createReadStream();
+
+      s3Stream.on("error", (s3Err) => {
+        console.error(`S3 stream error for key ${s3Key}:`, s3Err);
+        archive.abort();
+        if (!res.headersSent) {
+          res.status(500).json({ message: "Failed to read image from S3" });
+        } else {
+          res.end();
+        }
+      });
 
       const idxStr = index.toString().padStart(3, "0");
       const fileName = `${groupName}_${idxStr}.jpg`;
@@ -57,10 +82,19 @@ router.get("/:groupId", async (req, res) => {
       index += 1;
     }
 
-    await archive.finalize();
+    try {
+      await archive.finalize();
+    } catch (finalizeErr) {
+      console.error("Archive finalize error:", finalizeErr);
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Failed to finalize ZIP." });
+      }
+    }
   } catch (err) {
     console.error("ZIP download error:", err);
-    res.status(500).json({ message: "Failed to download ZIP." });
+    if (!res.headersSent) {
+      res.status(500).json({ message: "Failed to download ZIP." });
+    }
   }
 });
 
