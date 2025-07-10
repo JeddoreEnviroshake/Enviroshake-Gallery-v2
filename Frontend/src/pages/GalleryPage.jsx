@@ -739,13 +739,10 @@ export default function GalleryPage() {
                 />
               ))}
             </div>
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginTop: "1rem"
-            }}>
+            <div className="modal-action-row" style={{ marginTop: "1rem" }}>
               <button
                 onClick={handleModalImageDownload}
-                className={`download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage.groupImages[modalIndex]) ? "disabled" : ""}`}
-                style={{ fontSize: "1rem" }}
+                className={`modal-download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage.groupImages[modalIndex]) ? "disabled" : ""}`}
               >
                 {isInternalOnly(modalImage.groupMeta, modalImage.groupImages[modalIndex]) && <FaLock style={{ marginRight: 4, color: "#888" }} />}
                 Download Image
@@ -753,17 +750,8 @@ export default function GalleryPage() {
               {/* NOTES POPUP BUTTON */}
               <button
                 onClick={handleOpenNotesPopup}
-                style={{
-                  background: showNotesPopup ? "#e8f7e4" : "#f4f4f4",
-                  border: "1px solid #d2d2d2",
-                  borderRadius: 8,
-                  padding: "0.42rem 0.9rem",
-                  fontSize: "1.1rem",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 7,
-                }}
+                className="modal-notes-btn"
+                style={{ background: showNotesPopup ? "#e8f7e4" : "#fff" }}
                 title="View/Edit Notes"
               >
                 <StickyNote style={{ color: "#09713c" }} size={21} />
@@ -808,13 +796,10 @@ export default function GalleryPage() {
             >
               <FaTrashAlt />
             </span>
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginTop: "1.3rem"
-            }}>
+            <div className="modal-action-row" style={{ marginTop: "1.3rem" }}>
               <button
                 onClick={handleModalImageDownload}
-                className={`download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage) ? "disabled" : ""}`}
-                style={{ fontSize: "1rem" }}
+                className={`modal-download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage) ? "disabled" : ""}`}
               >
                 {isInternalOnly(modalImage.groupMeta, modalImage) && <FaLock style={{ marginRight: 4, color: "#888" }} />}
                 Download Image
@@ -822,17 +807,8 @@ export default function GalleryPage() {
               {/* NOTES POPUP BUTTON */}
               <button
                 onClick={handleOpenNotesPopup}
-                style={{
-                  background: showNotesPopup ? "#e8f7e4" : "#f4f4f4",
-                  border: "1px solid #d2d2d2",
-                  borderRadius: 8,
-                  padding: "0.42rem 0.9rem",
-                  fontSize: "1.1rem",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 7,
-                }}
+                className="modal-notes-btn"
+                style={{ background: showNotesPopup ? "#e8f7e4" : "#fff" }}
                 title="View/Edit Notes"
               >
                 <StickyNote style={{ color: "#09713c" }} size={21} />
