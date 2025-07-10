@@ -50,52 +50,45 @@ router.get("/:groupId", async (req, res) => {
     });
 
     const folderName = `${groupName}/`;
-    let index = 1;
 
-    for (const doc of snapshot.docs) {
+    // ✅ Collect all S3 streams as promises
+    const streamPromises = snapshot.docs.map((doc, index) => {
       const { s3Key } = doc.data();
 
-      // ✅ Skip Firebase-hosted images to avoid 403
       if (!s3Key || s3Key.includes("firebasestorage.googleapis.com")) {
         console.warn(`⏭️ Skipping Firebase image: ${s3Key}`);
-        continue;
+        return Promise.resolve(); // skip
       }
 
-      console.log(`📂 Zipping S3 key: ${s3Key}`);
+      const idxStr = (index + 1).toString().padStart(3, "0");
+      const fileName = `${groupName}_${idxStr}.jpg`;
 
-      try {
+      return new Promise((resolve, reject) => {
         const s3Stream = s3
           .getObject({ Bucket: process.env.AWS_S3_BUCKET, Key: s3Key })
           .createReadStream();
 
-        s3Stream.on("error", (s3Err) => {
-          console.error(`S3 stream error for key ${s3Key}:`, s3Err);
-          archive.abort();
-          if (!res.headersSent) {
-            res.status(500).json({ message: "Failed to read image from S3" });
-          } else {
-            res.end();
-          }
+        s3Stream.on("error", (err) => {
+          console.error(`S3 stream error for key ${s3Key}:`, err);
+          reject(err);
         });
 
-        const idxStr = index.toString().padStart(3, "0");
-        const fileName = `${groupName}_${idxStr}.jpg`;
-
         archive.append(s3Stream, { name: `${folderName}${fileName}` });
-        index += 1;
-      } catch (err) {
-        console.error(`❌ Error appending ${s3Key} to ZIP:`, err);
-      }
-    }
+        s3Stream.on("end", resolve);
+      });
+    });
 
-    try {
-      await archive.finalize();
-    } catch (finalizeErr) {
-      console.error("Archive finalize error:", finalizeErr);
-      if (!res.headersSent) {
-        res.status(500).json({ message: "Failed to finalize ZIP." });
-      }
-    }
+    // ✅ Wait for all streams before finalizing ZIP
+    Promise.all(streamPromises)
+      .then(() => archive.finalize())
+      .catch((err) => {
+        console.error("Error during ZIP creation:", err);
+        if (!res.headersSent) {
+          res.status(500).json({ message: "Failed to stream images." });
+        } else {
+          res.end();
+        }
+      });
   } catch (err) {
     console.error("ZIP download error:", err);
     if (!res.headersSent) {
