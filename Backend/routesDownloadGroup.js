@@ -54,6 +54,16 @@ router.get("/:groupId", async (req, res) => {
     // ✅ Collect all S3 streams as promises
     const streamPromises = snapshot.docs.map((doc, index) => {
       const { s3Key } = doc.data();
+<<<<<<< HEAD
+=======
+
+      if (!s3Key) {
+        console.warn(`Skipping document ${doc.id} with invalid s3Key`);
+        continue;
+      }
+
+      console.log(`Processing S3 key: ${s3Key}`);
+>>>>>>> f42e5031bf589af82ed48bbc2a0ddbf381e20406
 
       if (!s3Key || s3Key.includes("firebasestorage.googleapis.com")) {
         console.warn(`⏭️ Skipping Firebase image: ${s3Key}`);
@@ -89,6 +99,26 @@ router.get("/:groupId", async (req, res) => {
           res.end();
         }
       });
+<<<<<<< HEAD
+=======
+
+      const idxStr = index.toString().padStart(3, "0");
+      const extension = s3Key && s3Key.endsWith(".heic") ? ".heic" : ".jpg";
+      const fileName = `${groupName}_${idxStr}${extension}`;
+
+      archive.append(s3Stream, { name: `${folderName}${fileName}` });
+      index += 1;
+    }
+
+    try {
+      await archive.finalize();
+    } catch (finalizeErr) {
+      console.error("Archive finalize error:", finalizeErr);
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Failed to finalize ZIP." });
+      }
+    }
+>>>>>>> f42e5031bf589af82ed48bbc2a0ddbf381e20406
   } catch (err) {
     console.error("ZIP download error:", err);
     if (!res.headersSent) {
