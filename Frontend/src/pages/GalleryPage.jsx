@@ -664,9 +664,15 @@ export default function GalleryPage() {
         </div>
       </div>
       {/* ====== MODALS ====== */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} center styles={{
-        modal: { padding: 0, background: "white", borderRadius: "10px", maxWidth: "950px" }
-      }}>
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        center
+        classNames={{ modal: 'photo-modal' }}
+        styles={{
+          modal: { padding: 0, background: "white", borderRadius: "10px", maxWidth: "950px" }
+        }}
+      >
         {modalImage && modalImage.groupImages && modalImage.groupImages.length > 1 ? (
           <div style={{ textAlign: 'center', padding: '1.5rem 1.5rem 0 1.5rem', maxWidth: 880 }}>
             <div style={{ marginBottom: '0.7rem', fontWeight: 400 }}>
@@ -690,7 +696,12 @@ export default function GalleryPage() {
                     <img
                       src={`${BUCKET_URL}/${img.s3Key}`}
                       alt=""
-                      style={{ maxHeight: "360px", maxWidth: "100%", borderRadius: "10px", margin: "0 auto" }}
+                      className="modal-main-image"
+                      style={{
+                        maxWidth: "100%",
+                        borderRadius: "10px",
+                        display: "block"
+                      }}
                     />
                     <span
                       className="delete-icon"
@@ -766,8 +777,11 @@ export default function GalleryPage() {
             <img
               src={modalImage.url}
               alt=""
+              className="modal-main-image"
               style={{
-                maxWidth: "100%", maxHeight: "410px", margin: "0 auto", borderRadius: "10px", display: "block"
+                maxWidth: "100%",
+                borderRadius: "10px",
+                display: "block"
               }}
             />
             <span
