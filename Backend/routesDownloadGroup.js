@@ -35,11 +35,8 @@ router.get("/:groupId", async (req, res) => {
     const groupName = snapshot.docs[0].data().groupName || groupId;
     console.log(`Found ${snapshot.size} images for group: ${groupName}`);
 
-    res.setHeader("Content-Type", "application/zip");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${groupName}.zip"`
-    );
+    res.type("zip");
+    res.attachment(`${groupName}.zip`);
 
     const archive = archiver("zip", { zlib: { level: 9 } });
     archive.on("error", (archiveErr) => {
