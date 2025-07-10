@@ -244,3 +244,27 @@ button:focus-visible {
   gap: 1.2rem;
   margin-bottom: 1.2rem;
 }
+
+/* Gallery modal styles */
+.photo-modal .modal-main-image {
+  display: block;
+  margin: 20px auto 16px;
+  max-height: 70vh;
+  object-fit: contain;
+}
+
+.photo-modal .swiper-button-prev,
+.photo-modal .swiper-button-next {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-modal .swiper-button-prev:hover,
+.photo-modal .swiper-button-next:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
