@@ -199,7 +199,8 @@ export default function GalleryPage() {
     !!(groupMeta?.internalOnly || groupMeta?.doNotUse || firstImage?.internalOnly || firstImage?.doNotUse);
 
   // Download handlers
-  const downloadGroup = async (groupId) => {
+
+  const handleDownloadGroup = async (groupId) => {
     try {
       const res = await fetch(`http://localhost:4000/download-group/${groupId}`);
       if (!res.ok) throw new Error("Failed to generate ZIP");
@@ -585,7 +586,7 @@ export default function GalleryPage() {
                     <button
                       onClick={() => {
                         if (isGroup && groupImages.length > 1) {
-                          downloadGroup(groupId, groupMeta, firstImage);
+                          handleDownloadGroup(groupId);
                         } else {
                           downloadSingleImage(firstImage, groupMeta);
                         }
