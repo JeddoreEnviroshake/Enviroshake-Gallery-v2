@@ -17,10 +17,9 @@ import { COLOR_OPTIONS } from "../Constants/colorOptions";
 import { Modal } from 'react-responsive-modal';
 import 'react-responsive-modal/styles.css';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Thumbs } from 'swiper/modules';
+import { Navigation } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
-import 'swiper/css/thumbs';
 import { FaTrashAlt, FaLock } from "react-icons/fa";
 import { StickyNote } from "lucide-react";
 
@@ -61,7 +60,7 @@ export default function GalleryPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState(null);
   const [modalIndex, setModalIndex] = useState(0);
-  const [thumbsSwiper, setThumbsSwiper] = useState(null);
+  const [mainSwiper, setMainSwiper] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -694,9 +693,9 @@ export default function GalleryPage() {
               </div>
             </div>
             <Swiper
-              modules={[Navigation, Thumbs]}
+              modules={[Navigation]}
               navigation
-              thumbs={{ swiper: thumbsSwiper }}
+              onSwiper={setMainSwiper}
               initialSlide={modalIndex}
               onSlideChange={(swiper) => setModalIndex(swiper.activeIndex)}
               style={{ width: '100%', height: '380px', marginBottom: 16 }}
@@ -726,27 +725,20 @@ export default function GalleryPage() {
                 </SwiperSlide>
               ))}
             </Swiper>
-            <Swiper
-              modules={[Thumbs]}
-              onSwiper={setThumbsSwiper}
-              slidesPerView={Math.min(6, modalImage.groupImages.length)}
-              freeMode
-              watchSlidesProgress
-              style={{ width: '100%', margin: '0 auto 12px', height: '68px' }}
-            >
+            <div className="thumbnail-row">
               {modalImage.groupImages.map((img, idx) => (
-                <SwiperSlide key={img.id} style={{ opacity: modalIndex === idx ? 1 : 0.6 }}>
-                  <img
-                    src={`${BUCKET_URL}/${img.s3Key}`}
-                    alt=""
-                    style={{
-                      width: "58px", height: "58px", objectFit: "cover", borderRadius: "5px",
-                      border: modalIndex === idx ? "2px solid #09713c" : "2px solid #e0e0e0", cursor: "pointer"
-                    }}
-                  />
-                </SwiperSlide>
+                <img
+                  key={img.id}
+                  src={`${BUCKET_URL}/${img.s3Key}`}
+                  alt=""
+                  className={`thumbnail${modalIndex === idx ? ' selected' : ''}`}
+                  onClick={() => {
+                    setModalIndex(idx);
+                    if (mainSwiper) mainSwiper.slideTo(idx);
+                  }}
+                />
               ))}
-            </Swiper>
+            </div>
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginTop: "1rem"
             }}>
