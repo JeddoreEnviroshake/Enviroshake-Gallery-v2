@@ -220,39 +220,24 @@ export default function GalleryPage() {
 
 
   const downloadSelected = async () => {
-    let validCardIds = selectedCardIds.filter(cardId => {
-      const imgs = grouped[cardId];
-      if (!imgs || !imgs.length) return false;
-      const firstImage = imgs[0];
-      const groupMeta = groups[cardId];
-      return !isInternalOnly(groupMeta, firstImage);
-    });
-    if (validCardIds.length === 0) return;
-    let s3Keys = [];
-    validCardIds.forEach(cardId => {
-      const imgs = grouped[cardId];
-      if (imgs && imgs.length) {
-        s3Keys.push(...imgs.map(img => img.s3Key));
-      }
-    });
-    if (!s3Keys.length) return;
+    if (!selectedCardIds.length) return;
     try {
-      const res = await fetch(`http://localhost:4000/download-bulk`, {
+      const res = await fetch("http://localhost:4000/download-multiple-groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ s3Keys })
+        body: JSON.stringify({ selectedCardIds })
       });
       if (!res.ok) throw new Error("Failed to generate ZIP");
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Selected_Photos.zip`;
+      a.download = "Selected_Groups.zip";
       document.body.appendChild(a);
       a.click();
       a.remove();
     } catch (err) {
-      console.error("Download all selected failed:", err);
+      console.error("Download selected groups failed:", err);
       alert("Failed to download ZIP");
     }
   };
