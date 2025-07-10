@@ -529,7 +529,7 @@ export default function GalleryPage() {
           marginTop: "2rem",
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",
-          gridAutoRows: "1fr",
+          gridAutoRows: "300px",
           gap: "1.2rem",
         }}>
           {paginatedGroupIds.map((groupId) => {
@@ -544,7 +544,7 @@ export default function GalleryPage() {
             return (
               <div
                 key={groupId}
-                className="card gallery-card"
+                className="card gallery-card fixed-height"
                 style={{
                   border: "1px solid #ccc",
                   borderRadius: "12px",
@@ -616,37 +616,14 @@ export default function GalleryPage() {
                 </div>
 
                 {/* Internal Only Row */}
-                <div style={{
-                  margin: internalOnly ? "4px 0" : 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}>
-                  {internalOnly ? (
-                    <div style={{
-                      fontSize: "0.96em",
-                      color: "#888",
-                      fontWeight: 500,
-                      letterSpacing: "0.01em"
-                    }}>
-                      Internal Use Only – Not for Marketing
-                    </div>
-                  ) : null}
+                <div
+                  className={`internal-banner ${internalOnly ? '' : 'hidden'}`}
+                >
+                  Internal Use Only – Not for Marketing
                 </div>
 
                 {/* Main image */}
-                <div
-                  style={{
-                    position: "relative",
-                    height: 160,
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    overflow: "hidden",
-                    marginBottom: 6,
-                  }}
-                >
+                <div className="image-wrapper">
                   <img
                     src={`${BUCKET_URL}/${firstImage.s3Key}`}
                     alt="Group Thumbnail"
@@ -684,25 +661,7 @@ export default function GalleryPage() {
 
 
                 {/* Name/footer */}
-                <div
-                  style={{
-                    fontWeight: 400,
-                    fontSize: "1.1rem",
-                    marginTop: "auto",
-                    color: "#135b37",
-                    letterSpacing: ".01em",
-                    textAlign: "center",
-                    borderTop: "1px solid #e6e6e6",
-                    paddingTop: 6,
-                    lineHeight: 1.2,
-                    marginBottom: 0,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "normal",
-                    overflowWrap: "anywhere",
-                    background: "#fff",
-                  }}
-                >
+                <div className="gallery-name">
                   {displayName}
                 </div>
               </div>
