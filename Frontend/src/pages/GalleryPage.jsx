@@ -675,11 +675,22 @@ export default function GalleryPage() {
       >
         {modalImage && modalImage.groupImages && modalImage.groupImages.length > 1 ? (
           <div style={{ textAlign: 'center', padding: '1.5rem 1.5rem 0 1.5rem', maxWidth: 880 }}>
-            <div style={{ marginBottom: '0.7rem', fontWeight: 400 }}>
-              <div>{formatImageName(modalImage?.groupMeta?.groupName || modalImage?.groupId || "", modalIndex)}</div>
-              <div style={{ fontSize: "0.96em", color: "#666" }}>
-                {modalIndex + 1} of {modalImage.groupImages.length}
-                {"  "} |  {modalImage?.groupMeta?.timestamp?.toDate ? modalImage.groupMeta.timestamp.toDate().toLocaleString() : "-"}
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '1.2rem' }}>
+                {formatImageName(modalImage?.groupMeta?.groupName || modalImage?.groupId || "", modalIndex)}
+              </div>
+              <div
+                style={{
+                  fontSize: '0.9rem',
+                  color: '#666',
+                  marginTop: 4,
+                  marginBottom: 8,
+                }}
+              >
+                {modalIndex + 1} of {modalImage.groupImages.length} |{' '}
+                {modalImage?.groupMeta?.timestamp?.toDate
+                  ? modalImage.groupMeta.timestamp.toDate().toLocaleString()
+                  : '-'}
               </div>
             </div>
             <Swiper
@@ -770,9 +781,22 @@ export default function GalleryPage() {
           </div>
         ) : modalImage ? (
           <div style={{ textAlign: 'center', padding: '2rem 2rem 0 2rem', maxWidth: 780 }}>
-            <div style={{ marginBottom: '1rem', fontWeight: 400 }}>
-              {formatImageName(modalImage?.groupMeta?.groupName || modalImage?.groupId || "", 0)}
-              <div style={{ fontSize: "0.95em", color: "#666" }}>{modalImage?.groupMeta?.timestamp?.toDate ? modalImage.groupMeta.timestamp.toDate().toLocaleString() : "-"}</div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '1.2rem' }}>
+                {formatImageName(modalImage?.groupMeta?.groupName || modalImage?.groupId || "", 0)}
+              </div>
+              <div
+                style={{
+                  fontSize: '0.9rem',
+                  color: '#666',
+                  marginTop: 4,
+                  marginBottom: 8,
+                }}
+              >
+                {modalImage?.groupMeta?.timestamp?.toDate
+                  ? modalImage.groupMeta.timestamp.toDate().toLocaleString()
+                  : '-'}
+              </div>
             </div>
             <img
               src={modalImage.url}
