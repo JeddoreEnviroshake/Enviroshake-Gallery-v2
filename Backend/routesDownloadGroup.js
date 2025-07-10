@@ -1,11 +1,9 @@
 const express = require("express");
 const AWS = require("aws-sdk");
 const archiver = require("archiver");
-
 const admin = require("firebase-admin");
 
 const db = admin.firestore();
-
 const router = express.Router();
 
 const s3 = new AWS.S3({
@@ -18,7 +16,7 @@ const s3 = new AWS.S3({
 
 router.get("/:groupId", async (req, res) => {
   const { groupId } = req.params;
-  console.log(`Download group route called for groupId: ${groupId}`);
+  console.log(`📦 Download group route called for groupId: ${groupId}`);
 
   try {
     const snapshot = await db
@@ -28,12 +26,12 @@ router.get("/:groupId", async (req, res) => {
       .get();
 
     if (snapshot.empty) {
-      console.log(`No images found for groupId: ${groupId}`);
+      console.log(`⚠️ No images found for groupId: ${groupId}`);
       return res.status(404).json({ message: "No images found." });
     }
 
     const groupName = snapshot.docs[0].data().groupName || groupId;
-    console.log(`Found ${snapshot.size} images for group: ${groupName}`);
+    console.log(`✅ Found ${snapshot.size} images for group: ${groupName}`);
 
     res.setHeader("Content-Type", "application/zip");
     res.setHeader(
@@ -59,27 +57,38 @@ router.get("/:groupId", async (req, res) => {
 
     for (const doc of snapshot.docs) {
       const { s3Key } = doc.data();
-      console.log(`Processing S3 key: ${s3Key}`);
 
-      const s3Stream = s3
-        .getObject({ Bucket: process.env.AWS_S3_BUCKET, Key: s3Key })
-        .createReadStream();
+      // ✅ Skip Firebase-hosted images to avoid 403
+      if (!s3Key || s3Key.includes("firebasestorage.googleapis.com")) {
+        console.warn(`⏭️ Skipping Firebase image: ${s3Key}`);
+        continue;
+      }
 
-      s3Stream.on("error", (s3Err) => {
-        console.error(`S3 stream error for key ${s3Key}:`, s3Err);
-        archive.abort();
-        if (!res.headersSent) {
-          res.status(500).json({ message: "Failed to read image from S3" });
-        } else {
-          res.end();
-        }
-      });
+      console.log(`📂 Zipping S3 key: ${s3Key}`);
 
-      const idxStr = index.toString().padStart(3, "0");
-      const fileName = `${groupName}_${idxStr}.jpg`;
+      try {
+        const s3Stream = s3
+          .getObject({ Bucket: process.env.AWS_S3_BUCKET, Key: s3Key })
+          .createReadStream();
 
-      archive.append(s3Stream, { name: `${folderName}${fileName}` });
-      index += 1;
+        s3Stream.on("error", (s3Err) => {
+          console.error(`S3 stream error for key ${s3Key}:`, s3Err);
+          archive.abort();
+          if (!res.headersSent) {
+            res.status(500).json({ message: "Failed to read image from S3" });
+          } else {
+            res.end();
+          }
+        });
+
+        const idxStr = index.toString().padStart(3, "0");
+        const fileName = `${groupName}_${idxStr}.jpg`;
+
+        archive.append(s3Stream, { name: `${folderName}${fileName}` });
+        index += 1;
+      } catch (err) {
+        console.error(`❌ Error appending ${s3Key} to ZIP:`, err);
+      }
     }
 
     try {
