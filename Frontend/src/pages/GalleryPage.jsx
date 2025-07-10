@@ -227,7 +227,7 @@ export default function GalleryPage() {
       const res = await fetch("http://localhost:4000/download-multiple-groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selectedCardIds })
+        body: JSON.stringify({ groupIds: selectedCardIds })
       });
       if (!res.ok) throw new Error("Failed to generate ZIP");
       const blob = await res.blob();
