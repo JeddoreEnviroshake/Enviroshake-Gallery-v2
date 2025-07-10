@@ -98,6 +98,60 @@ button:focus-visible {
   height: 100%;
 }
 
+/* Ensure uniform card height within the grid */
+.gallery-card.fixed-height {
+  height: 300px;
+}
+
+/* Reserved banner space at the top of each card */
+.gallery-card .internal-banner {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0;
+  font-size: 0.96em;
+  color: #888;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.gallery-card .internal-banner.hidden {
+  visibility: hidden;
+}
+
+/* Image wrapper with consistent sizing */
+.gallery-card .image-wrapper {
+  position: relative;
+  height: 150px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+/* Group name limited to two lines */
+.gallery-card .gallery-name {
+  font-weight: 400;
+  font-size: 1.1rem;
+  margin-top: auto;
+  color: #135b37;
+  letter-spacing: 0.01em;
+  text-align: center;
+  border-top: 1px solid #e6e6e6;
+  padding-top: 6px;
+  line-height: 1.2;
+  margin-bottom: 0;
+  background: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
 .gallery-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
