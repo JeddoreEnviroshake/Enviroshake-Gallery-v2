@@ -56,6 +56,12 @@ router.get("/:groupId", async (req, res) => {
 
     for (const doc of snapshot.docs) {
       const { s3Key } = doc.data();
+
+      if (!s3Key) {
+        console.warn(`Skipping document ${doc.id} with invalid s3Key`);
+        continue;
+      }
+
       console.log(`Processing S3 key: ${s3Key}`);
 
       const s3Stream = s3
@@ -73,7 +79,8 @@ router.get("/:groupId", async (req, res) => {
       });
 
       const idxStr = index.toString().padStart(3, "0");
-      const fileName = `${groupName}_${idxStr}.jpg`;
+      const extension = s3Key && s3Key.endsWith(".heic") ? ".heic" : ".jpg";
+      const fileName = `${groupName}_${idxStr}${extension}`;
 
       archive.append(s3Stream, { name: `${folderName}${fileName}` });
       index += 1;
