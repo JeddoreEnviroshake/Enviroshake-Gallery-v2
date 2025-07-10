@@ -79,6 +79,7 @@ export default function GalleryPage() {
   const [selectedCardIds, setSelectedCardIds] = useState([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Notes popup state
   const [showNotesPopup, setShowNotesPopup] = useState(false);
@@ -220,7 +221,8 @@ export default function GalleryPage() {
 
 
   const downloadSelected = async () => {
-    if (!selectedCardIds.length) return;
+    if (!selectedCardIds.length || isDownloading) return;
+    setIsDownloading(true);
     try {
       const res = await fetch("http://localhost:4000/download-multiple-groups", {
         method: "POST",
@@ -240,6 +242,7 @@ export default function GalleryPage() {
       console.error("Download selected groups failed:", err);
       alert("Failed to download ZIP");
     }
+    setIsDownloading(false);
   };
 
   const handleModalImageDownload = () => {
@@ -487,10 +490,10 @@ export default function GalleryPage() {
           />
           <button
             onClick={downloadSelected}
-            className={`download-btn ${selectedCardIds.length ? "" : "disabled"}`}
-            disabled={selectedCardIds.length === 0}
+            className={`download-btn ${selectedCardIds.length && !isDownloading ? "" : "disabled"}`}
+            disabled={selectedCardIds.length === 0 || isDownloading}
           >
-            Download All
+            {isDownloading ? "Downloading..." : "Download All"}
           </button>
         </div>
         {/* FILTERS */}
