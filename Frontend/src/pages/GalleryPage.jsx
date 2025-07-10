@@ -202,29 +202,22 @@ export default function GalleryPage() {
 
   const handleDownloadGroup = async (groupId) => {
     try {
-      const res = await fetch(`http://localhost:4000/download-group/${groupId}`);
-      if (!res.ok) throw new Error("Failed to generate ZIP");
-      const blob = await res.blob();
+      const response = await fetch(`http://localhost:4000/download-group/${groupId}`);
+      if (!response.ok) throw new Error("Failed to fetch ZIP");
+
+      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${groupId}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${groupId}.zip`;
+      link.click();
+      window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Download failed:", err);
       alert("Failed to download ZIP");
+      console.error(err);
     }
   };
 
-  const downloadSingleImage = (img) => {
-    const url = `${BUCKET_URL}/${img.s3Key}`;
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = img.s3Key.split("/").pop() || "image.jpg";
-    link.click();
-  };
 
   const downloadSelected = async () => {
     let validCardIds = selectedCardIds.filter(cardId => {
@@ -584,13 +577,7 @@ export default function GalleryPage() {
                   {/* Download Center */}
                   <div style={{ display: "flex", justifyContent: "center" }}>
                     <button
-                      onClick={() => {
-                        if (isGroup && groupImages.length > 1) {
-                          handleDownloadGroup(groupId);
-                        } else {
-                          downloadSingleImage(firstImage, groupMeta);
-                        }
-                      }}
+                      onClick={() => handleDownloadGroup(groupId)}
                       className={`download-btn ${internalOnly ? "disabled" : ""}`}
                       style={{
                         fontSize: "0.98rem",
