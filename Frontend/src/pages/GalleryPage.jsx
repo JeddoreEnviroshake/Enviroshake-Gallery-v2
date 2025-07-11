@@ -612,7 +612,8 @@ export default function GalleryPage() {
             display: "grid",
             gridTemplateColumns: "repeat(5, 1fr)",
             gridAutoRows: "300px",
-            gap: "1.2rem",
+            columnGap: "1.2rem",
+            rowGap: "1.6rem",
           }}
         >
           {paginatedGroupIds.map((groupId) => {
