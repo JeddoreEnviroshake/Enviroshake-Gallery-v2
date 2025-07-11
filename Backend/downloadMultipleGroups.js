@@ -1,4 +1,4 @@
-// ✅ This route handles downloading multiple image groups as one ZIP file
+// Download multiple image groups as a single ZIP
 
 const express = require("express");
 const archiver = require("archiver");
@@ -18,17 +18,19 @@ router.post("/", async (req, res) => {
   res.attachment(`enviroshake_selected_groups.zip`);
   const archive = archiver("zip", { zlib: { level: 9 } });
 
-  archive.on("error", err => res.status(500).send({ error: err.message }));
+  archive.on("error", (err) => res.status(500).send({ error: err.message }));
   archive.pipe(res);
 
   try {
     for (const groupId of groupIds) {
-      const imageDocs = await admin.firestore()
+      const imageDocs = await admin
+        .firestore()
         .collection("images")
         .where("groupId", "==", groupId)
         .get();
 
-      const groupMeta = await admin.firestore()
+      const groupMeta = await admin
+        .firestore()
         .collection("imageGroups")
         .doc(groupId)
         .get();
@@ -41,21 +43,21 @@ router.post("/", async (req, res) => {
         const { s3Key } = doc.data();
 
         if (!s3Key) {
-          console.warn(`⚠️ Skipping image with missing s3Key in group ${groupId}`);
           continue;
         }
 
         const extension = s3Key.endsWith(".png") ? ".png" : ".jpg";
         const fileName = `${safeName}_${String(i).padStart(3, "0")}${extension}`;
-        const s3Stream = s3.getObject({ Bucket: bucket, Key: s3Key }).createReadStream();
+        const s3Stream = s3
+          .getObject({ Bucket: bucket, Key: s3Key })
+          .createReadStream();
         archive.append(s3Stream, { name: fileName });
         i++;
       }
     }
 
     await archive.finalize();
-  } catch (err) {
-    console.error("ZIP error", err);
+  } catch {
     res.status(500).send("Error generating ZIP");
   }
 });
