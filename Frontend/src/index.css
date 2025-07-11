@@ -134,7 +134,7 @@ button:focus-visible {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 
 /* Group name limited to two lines */
