@@ -908,7 +908,7 @@ export default function GalleryPage() {
                 />
               ))}
             </div>
-            <div className="modal-action-row" style={{ marginTop: "1rem" }}>
+            <div className="modal-action-row">
               <button
                 onClick={handleModalImageDownload}
                 className={`modal-download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage.groupImages[modalIndex]) ? "disabled" : ""}`}
@@ -984,7 +984,7 @@ export default function GalleryPage() {
             >
               <FaTrashAlt />
             </span>
-            <div className="modal-action-row" style={{ marginTop: "1.3rem" }}>
+            <div className="modal-action-row">
               <button
                 onClick={handleModalImageDownload}
                 className={`modal-download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage) ? "disabled" : ""}`}
