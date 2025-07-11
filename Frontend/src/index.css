@@ -309,12 +309,13 @@ button:focus-visible {
   background: #09713c;
   color: #fff;
   border: none;
-  border-radius: 6px;
-  padding: 0.42rem 1rem;
-  font-weight: 600;
+  border-radius: 12px;
+  padding: 0.5rem 1.2rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
   cursor: pointer;
 }
 
@@ -326,13 +327,19 @@ button:focus-visible {
 
 .photo-modal .modal-notes-btn {
   background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 0.42rem 1rem;
+  border: 2px solid #09713c;
+  border-radius: 12px;
+  padding: 0.5rem 1.2rem;
   font-size: 1rem;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.5rem;
   color: #09713c;
   cursor: pointer;
+  font-weight: 700;
+}
+
+.photo-modal .modal-notes-btn:hover {
+  background: #09713c;
+  color: #fff;
 }
