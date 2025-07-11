@@ -20,7 +20,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
-import { FaTrashAlt, FaLock } from "react-icons/fa";
+import { FaTrashAlt, FaLock, FaDownload } from "react-icons/fa";
 import { StickyNote } from "lucide-react";
 
 const BUCKET_URL = "https://enviroshake-gallery-images.s3.amazonaws.com";
@@ -913,21 +913,22 @@ export default function GalleryPage() {
                 onClick={handleModalImageDownload}
                 className={`modal-download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage.groupImages[modalIndex]) ? "disabled" : ""}`}
               >
+                <FaDownload />
                 {isInternalOnly(
                   modalImage.groupMeta,
                   modalImage.groupImages[modalIndex],
-                ) && <FaLock style={{ marginRight: 4, color: "#888" }} />}
-                Download Image
+                ) && <FaLock style={{ color: "#888" }} />}
+                <span>Download Image</span>
               </button>
               {/* NOTES POPUP BUTTON */}
               <button
                 onClick={handleOpenNotesPopup}
                 className="modal-notes-btn"
-                style={{ background: showNotesPopup ? "#e8f7e4" : "#fff" }}
+                style={{ background: showNotesPopup ? "#e8f7e4" : undefined }}
                 title="View/Edit Notes"
               >
-                <StickyNote style={{ color: "#09713c" }} size={21} />
-                Notes
+                <StickyNote size={21} />
+                <span>Notes</span>
               </button>
             </div>
           </div>
@@ -988,20 +989,21 @@ export default function GalleryPage() {
                 onClick={handleModalImageDownload}
                 className={`modal-download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage) ? "disabled" : ""}`}
               >
+                <FaDownload />
                 {isInternalOnly(modalImage.groupMeta, modalImage) && (
-                  <FaLock style={{ marginRight: 4, color: "#888" }} />
+                  <FaLock style={{ color: "#888" }} />
                 )}
-                Download Image
+                <span>Download Image</span>
               </button>
               {/* NOTES POPUP BUTTON */}
               <button
                 onClick={handleOpenNotesPopup}
                 className="modal-notes-btn"
-                style={{ background: showNotesPopup ? "#e8f7e4" : "#fff" }}
+                style={{ background: showNotesPopup ? "#e8f7e4" : undefined }}
                 title="View/Edit Notes"
               >
-                <StickyNote style={{ color: "#09713c" }} size={21} />
-                Notes
+                <StickyNote size={21} />
+                <span>Notes</span>
               </button>
             </div>
           </div>
