@@ -300,7 +300,8 @@ button:focus-visible {
 .photo-modal .modal-action-row {
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: 1rem;
+  width: 100%;
   margin-top: 1rem;
 }
 
