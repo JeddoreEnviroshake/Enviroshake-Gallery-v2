@@ -309,14 +309,15 @@ button:focus-visible {
   background: #09713c;
   color: #fff;
   border: none;
-  border-radius: 12px;
-  padding: 0.5rem 1.2rem;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   cursor: pointer;
+  transition: transform 0.15s, background-color 0.15s;
 }
 
 .photo-modal .modal-download-btn.disabled {
@@ -328,8 +329,8 @@ button:focus-visible {
 .photo-modal .modal-notes-btn {
   background: #fff;
   border: 2px solid #09713c;
-  border-radius: 12px;
-  padding: 0.5rem 1.2rem;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
   font-size: 1rem;
   display: flex;
   align-items: center;
@@ -337,9 +338,17 @@ button:focus-visible {
   color: #09713c;
   cursor: pointer;
   font-weight: 700;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s, background-color 0.15s;
 }
 
 .photo-modal .modal-notes-btn:hover {
-  background: #09713c;
-  color: #fff;
+  background: #f0f0f0;
+  color: #09713c;
+  transform: scale(1.05);
+}
+
+.photo-modal .modal-download-btn:hover:not(.disabled) {
+  background: #075b31;
+  transform: scale(1.05);
 }
