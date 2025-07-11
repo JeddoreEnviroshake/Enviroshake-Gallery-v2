@@ -90,12 +90,17 @@ button:focus-visible {
 /* Gallery card styles */
 .gallery-card {
   background: #fff;
+  border: 1px solid #e0e0e0;
   border-radius: 12px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.2s ease;
+  padding: 1rem;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
   display: flex;
   flex-direction: column;
+  position: relative;
+  text-align: center;
   height: 100%;
+  overflow: hidden;
 }
 
 /* Ensure uniform card height within the grid */
@@ -153,7 +158,9 @@ button:focus-visible {
 }
 
 .gallery-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px) scale(1.02);
+  border-color: #09713c;
 }
 
 /* Action button styles */
@@ -243,6 +250,15 @@ button:focus-visible {
   flex-wrap: wrap;
   gap: 1.2rem;
   margin-bottom: 1.2rem;
+}
+
+/* Search input styling */
+.search-input {
+  padding: 0.5rem;
+  border: 1px solid #cfcfcf;
+  border-radius: 6px;
+  min-width: 220px;
+  font-size: 1rem;
 }
 
 /* Gallery modal styles */
