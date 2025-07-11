@@ -555,13 +555,7 @@ export default function GalleryPage() {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            style={{
-              padding: "0.5rem",
-              border: "1px solid #cfcfcf",
-              borderRadius: "6px",
-              minWidth: "220px",
-              fontSize: "1rem",
-            }}
+            className="search-input"
           />
           <button
             onClick={downloadSelected}
@@ -635,19 +629,6 @@ export default function GalleryPage() {
               <div
                 key={groupId}
                 className="card gallery-card fixed-height"
-                style={{
-                  border: "1px solid #ccc",
-                  borderRadius: "12px",
-                  padding: "1rem",
-                  background: "#fff",
-                  textAlign: "center",
-                  boxSizing: "border-box",
-                  position: "relative",
-                  overflow: "hidden",
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
               >
                 {/* --- Card Header: Checkbox, Download Center, Pencil Right --- */}
                 <div
