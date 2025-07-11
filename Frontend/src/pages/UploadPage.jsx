@@ -9,16 +9,41 @@ import { onAuthStateChanged } from "firebase/auth";
 const OPTIONS = {
   productLines: ["Enviroshake", "Enviroshingle", "EnviroSlate"],
   roofTags: [
-    "Gable", "Gambrel", "Hip", "Mansard", "Siding", "Dormer", "Eyebrow", "Flared Rake", "Rake Metal",
-    "Skylight", "Snow Guards", "Solar Panels", "Staggered Coursing", "Steeple", "Straight Coursing",
-    "Turret", "valleys"
+    "Gable",
+    "Gambrel",
+    "Hip",
+    "Mansard",
+    "Siding",
+    "Dormer",
+    "Eyebrow",
+    "Flared Rake",
+    "Rake Metal",
+    "Skylight",
+    "Snow Guards",
+    "Solar Panels",
+    "Staggered Coursing",
+    "Steeple",
+    "Straight Coursing",
+    "Turret",
+    "valleys",
   ],
   projectTypes: [
-    "Barn", "Clubhouse", "Commercial", "Education", "Gazebo", "Historic", "HOA",
-    "Hospitality", "Multifamily", "National Monument", "National Register of Historic Sites",
-    "Religious", "Residential", "Retail"
+    "Barn",
+    "Clubhouse",
+    "Commercial",
+    "Education",
+    "Gazebo",
+    "Historic",
+    "HOA",
+    "Hospitality",
+    "Multifamily",
+    "National Monument",
+    "National Register of Historic Sites",
+    "Religious",
+    "Residential",
+    "Retail",
   ],
-  countries: ["Canada", "USA", "Caribbean", "Other"]
+  countries: ["Canada", "USA", "Caribbean", "Other"],
 };
 
 export default function UploadPage() {
@@ -74,7 +99,7 @@ export default function UploadPage() {
   const groupId = [
     productLine?.value || "—",
     selectedColors[0]?.value || "—",
-    projectName || "—"
+    projectName || "—",
   ].join("_");
 
   const namePreview = `${groupId}_001`;
@@ -89,8 +114,15 @@ export default function UploadPage() {
     e.preventDefault();
     setMessage("");
 
-    if (!selectedFiles.length || !productLine || selectedColors.length === 0 || !projectName) {
-      alert("Please select at least one image, product line, one color, and project name.");
+    if (
+      !selectedFiles.length ||
+      !productLine ||
+      selectedColors.length === 0 ||
+      !projectName
+    ) {
+      alert(
+        "Please select at least one image, product line, one color, and project name.",
+      );
       return;
     }
     if (!userEmail) {
@@ -105,9 +137,9 @@ export default function UploadPage() {
         groupName: groupId,
         colors: selectedColors.map((c) => c.value),
         productLine: productLine.value,
-          roofTags: roofTags.map((r) => r.value),
-          projectTags: projectTags.map((p) => p.value),
-          countryTags: countryTags.map((c) => c.value),
+        roofTags: roofTags.map((r) => r.value),
+        projectTags: projectTags.map((p) => p.value),
+        countryTags: countryTags.map((c) => c.value),
         notes,
         internalOnly,
         uploadedBy: userEmail,
@@ -158,7 +190,9 @@ export default function UploadPage() {
         uploaded++;
       }
 
-      setMessage(`✅ ${uploaded} image${uploaded > 1 ? "s" : ""} uploaded and saved!`);
+      setMessage(
+        `✅ ${uploaded} image${uploaded > 1 ? "s" : ""} uploaded and saved!`,
+      );
       setSelectedColors([]);
       setProductLine(null);
       setRoofTags([]);
@@ -168,8 +202,7 @@ export default function UploadPage() {
       setSelectedFiles([]);
       setInternalOnly(false);
       setProjectName("");
-    } catch (err) {
-      console.error("❌ Upload failed:", err);
+    } catch {
       alert("Upload failed. See console.");
     } finally {
       setUploading(false);
@@ -179,94 +212,100 @@ export default function UploadPage() {
   return (
     <>
       <div
-  style={{
-    width: "100vw",
-    backgroundColor: "#09713c",
-    color: "white",
-    height: "64px",
-    display: "flex",
-    alignItems: "center",
-    position: "relative",
-    zIndex: 1000,
-    justifyContent: "space-between",
-    padding: 0
-  }}
->
-  <div
-    style={{
-      flex: 1,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "flex-start",
-      minWidth: 0,
-      paddingLeft: "2rem",
-      height: "300%",
-    }}
-  >
-    <Link
-      to="/dashboard"
-      style={{ display: "flex", alignItems: "center", height: "100%" }}
-    >
-      <img
-        src="/enviroshake-gallery/Enviroshake_logo/Enviroshake_white_logo.png"
-        alt="Enviroshake Logo"
         style={{
-          maxHeight: "100%",
-          height: "100%",
-          width: "auto",
-          display: "block",
+          width: "100vw",
+          backgroundColor: "#09713c",
+          color: "white",
+          height: "64px",
+          display: "flex",
+          alignItems: "center",
+          position: "relative",
+          zIndex: 1000,
+          justifyContent: "space-between",
+          padding: 0,
         }}
-      />
-    </Link>
-  </div>
+      >
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            minWidth: 0,
+            paddingLeft: "2rem",
+            height: "300%",
+          }}
+        >
+          <Link
+            to="/dashboard"
+            style={{ display: "flex", alignItems: "center", height: "100%" }}
+          >
+            <img
+              src="/enviroshake-gallery/Enviroshake_logo/Enviroshake_white_logo.png"
+              alt="Enviroshake Logo"
+              style={{
+                maxHeight: "100%",
+                height: "100%",
+                width: "auto",
+                display: "block",
+              }}
+            />
+          </Link>
+        </div>
 
-  <div style={{
-    flex: 1,
-    textAlign: "center",
-    fontWeight: "bold",
-    fontSize: "1.45rem",
-    letterSpacing: ".01em",
-    whiteSpace: "nowrap"
-  }}>
-    Upload Images
-  </div>
+        <div
+          style={{
+            flex: 1,
+            textAlign: "center",
+            fontWeight: "bold",
+            fontSize: "1.45rem",
+            letterSpacing: ".01em",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Upload Images
+        </div>
 
-  <div style={{
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    paddingRight: "2rem",
-    height: "100%"
-  }}>
-    <button
-      onClick={() => auth.signOut()}
-      style={{
-        background: "white",
-        color: "#09713c",
-        border: "none",
-        padding: "0.33rem 1rem",
-        borderRadius: "8px",
-        fontWeight: "bold",
-        fontSize: "1.01rem",
-        boxShadow: "none",
-        cursor: "pointer"
-      }}
-    >
-      Logout
-    </button>
-  </div>
-</div>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            paddingRight: "2rem",
+            height: "100%",
+          }}
+        >
+          <button
+            onClick={() => auth.signOut()}
+            style={{
+              background: "white",
+              color: "#09713c",
+              border: "none",
+              padding: "0.33rem 1rem",
+              borderRadius: "8px",
+              fontWeight: "bold",
+              fontSize: "1.01rem",
+              boxShadow: "none",
+              cursor: "pointer",
+            }}
+          >
+            Logout
+          </button>
+        </div>
+      </div>
 
-      <div style={{
-        marginTop: "20px",
-        padding: "2rem 0",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        minHeight: "80vh",
-        background: "#fafcfa"
-      }}>
+      <div
+        style={{
+          marginTop: "20px",
+          padding: "2rem 0",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          minHeight: "80vh",
+          background: "#fafcfa",
+        }}
+      >
         <form
           onSubmit={handleSubmit}
           onDragOver={handleDragOver}
@@ -280,10 +319,19 @@ export default function UploadPage() {
             border: dragOver ? "2px dashed #09713c" : "1px solid #e3e3e3",
             borderRadius: "12px",
             padding: "2.3rem 2rem 2rem 2rem",
-            boxShadow: "0 4px 20px 0 rgba(30,36,56,0.15)"
+            boxShadow: "0 4px 20px 0 rgba(30,36,56,0.15)",
           }}
         >
-          <h3 style={{ textAlign: "center", marginBottom: "2rem", color: "#09713c", fontWeight: "bold" }}>Upload a New Image</h3>
+          <h3
+            style={{
+              textAlign: "center",
+              marginBottom: "2rem",
+              color: "#09713c",
+              fontWeight: "bold",
+            }}
+          >
+            Upload a New Image
+          </h3>
           <div style={{ marginBottom: "1.0rem" }}>
             <label style={{ fontWeight: 600, display: "block" }}>
               Choose image(s):<span style={{ color: "#e42" }}>*</span>
@@ -297,15 +345,20 @@ export default function UploadPage() {
               required
             />
             {/* Internal Only Checkbox */}
-            <div style={{ marginTop: 8, display: "flex", alignItems: "center" }}>
+            <div
+              style={{ marginTop: 8, display: "flex", alignItems: "center" }}
+            >
               <input
                 type="checkbox"
                 id="internalOnly"
                 checked={internalOnly}
-                onChange={e => setInternalOnly(e.target.checked)}
+                onChange={(e) => setInternalOnly(e.target.checked)}
                 style={{ marginRight: 8, width: 16, height: 16 }}
               />
-              <label htmlFor="internalOnly" style={{ fontSize: "1em", color: "#973c3c" }}>
+              <label
+                htmlFor="internalOnly"
+                style={{ fontSize: "1em", color: "#973c3c" }}
+              >
                 Internal Use Only – Not for Marketing
               </label>
             </div>
@@ -318,7 +371,7 @@ export default function UploadPage() {
                 id="projectName"
                 type="text"
                 value={projectName}
-                onChange={e => setProjectName(e.target.value)}
+                onChange={(e) => setProjectName(e.target.value)}
                 placeholder=" "
                 required
               />
@@ -330,30 +383,44 @@ export default function UploadPage() {
           </div>
 
           {/* Name Preview */}
-          <div style={{
-            marginBottom: "1.5rem",
-            fontWeight: 500,
-            fontSize: "1.07rem",
-            background: "#f4faf5",
-            borderRadius: 6,
-            border: "1px solid #e0e0e0",
-            padding: "0.6rem 1rem",
-            color: "#09713c"
-          }}>
+          <div
+            style={{
+              marginBottom: "1.5rem",
+              fontWeight: 500,
+              fontSize: "1.07rem",
+              background: "#f4faf5",
+              borderRadius: 6,
+              border: "1px solid #e0e0e0",
+              padding: "0.6rem 1rem",
+              color: "#09713c",
+            }}
+          >
             Name Preview:&nbsp;
             <span style={{ letterSpacing: "0.01em" }}>{namePreview}</span>
-            {selectedFiles.length > 1 &&
-              <span style={{ color: "#555", fontSize: "0.95em", marginLeft: "10px" }}>
-                ({selectedFiles.length} images will be named ..._001, ..._002, ...)
+            {selectedFiles.length > 1 && (
+              <span
+                style={{
+                  color: "#555",
+                  fontSize: "0.95em",
+                  marginLeft: "10px",
+                }}
+              >
+                ({selectedFiles.length} images will be named ..._001, ..._002,
+                ...)
               </span>
-            }
+            )}
           </div>
 
           <div style={{ marginBottom: "1.25rem" }}>
-            <label style={{ fontWeight: 600 }}>Product Line:<span style={{ color: "#e42" }}>*</span></label>
+            <label style={{ fontWeight: 600 }}>
+              Product Line:<span style={{ color: "#e42" }}>*</span>
+            </label>
             <Select
               placeholder="Choose product line..."
-              options={OPTIONS.productLines.map((p) => ({ label: p, value: p }))}
+              options={OPTIONS.productLines.map((p) => ({
+                label: p,
+                value: p,
+              }))}
               value={productLine}
               onChange={setProductLine}
               isClearable={false}
@@ -361,11 +428,16 @@ export default function UploadPage() {
           </div>
 
           <div style={{ marginBottom: "1.25rem" }}>
-            <label style={{ fontWeight: 600 }}>Color Tags:<span style={{ color: "#e42" }}>*</span></label>
+            <label style={{ fontWeight: 600 }}>
+              Color Tags:<span style={{ color: "#e42" }}>*</span>
+            </label>
             <Select
               isMulti
               placeholder="Choose colors..."
-              options={COLOR_OPTIONS.map((color) => ({ label: color, value: color }))}
+              options={COLOR_OPTIONS.map((color) => ({
+                label: color,
+                value: color,
+              }))}
               value={selectedColors}
               onChange={setSelectedColors}
               isClearable={false}
@@ -373,7 +445,10 @@ export default function UploadPage() {
           </div>
 
           <div style={{ marginBottom: "1.1rem" }}>
-            <label style={{ fontWeight: 600 }}>Roof Tags: <span style={{ color: "#999", fontWeight: 400 }}>(optional)</span></label>
+            <label style={{ fontWeight: 600 }}>
+              Roof Tags:{" "}
+              <span style={{ color: "#999", fontWeight: 400 }}>(optional)</span>
+            </label>
             <Select
               isMulti
               placeholder="Select roof features..."
@@ -384,18 +459,27 @@ export default function UploadPage() {
           </div>
 
           <div style={{ marginBottom: "1.1rem" }}>
-            <label style={{ fontWeight: 600 }}>Project Tags: <span style={{ color: "#999", fontWeight: 400 }}>(optional)</span></label>
+            <label style={{ fontWeight: 600 }}>
+              Project Tags:{" "}
+              <span style={{ color: "#999", fontWeight: 400 }}>(optional)</span>
+            </label>
             <Select
               isMulti
               placeholder="Select project types..."
-              options={OPTIONS.projectTypes.map((t) => ({ label: t, value: t }))}
+              options={OPTIONS.projectTypes.map((t) => ({
+                label: t,
+                value: t,
+              }))}
               value={projectTags}
               onChange={setProjectTags}
             />
           </div>
 
           <div style={{ marginBottom: "1.1rem" }}>
-            <label style={{ fontWeight: 600 }}>Country Tags: <span style={{ color: "#999", fontWeight: 400 }}>(optional)</span></label>
+            <label style={{ fontWeight: 600 }}>
+              Country Tags:{" "}
+              <span style={{ color: "#999", fontWeight: 400 }}>(optional)</span>
+            </label>
             <Select
               isMulti
               placeholder="Select countries..."
@@ -415,7 +499,10 @@ export default function UploadPage() {
                 placeholder=" "
               />
               <label htmlFor="notes" style={{ fontWeight: 600 }}>
-                Notes <span style={{ color: "#999", fontWeight: 400 }}>(optional):</span>
+                Notes{" "}
+                <span style={{ color: "#999", fontWeight: 400 }}>
+                  (optional):
+                </span>
               </label>
             </div>
           </div>
@@ -434,14 +521,21 @@ export default function UploadPage() {
               fontSize: "1.11rem",
               cursor: uploading ? "not-allowed" : "pointer",
               boxShadow: uploading ? "none" : "0 2px 7px 0 rgba(30,36,56,0.09)",
-              marginTop: "0.5rem"
+              marginTop: "0.5rem",
             }}
           >
             {uploading ? "Uploading..." : "Upload Image"}
           </button>
 
           {message && (
-            <div style={{ marginTop: "1.25rem", color: "#09713c", textAlign: "center", fontWeight: 500 }}>
+            <div
+              style={{
+                marginTop: "1.25rem",
+                color: "#09713c",
+                textAlign: "center",
+                fontWeight: 500,
+              }}
+            >
               {message}
             </div>
           )}
