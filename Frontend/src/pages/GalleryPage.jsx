@@ -321,20 +321,6 @@ export default function GalleryPage() {
     setIsDownloading(false);
   };
 
-const handleDirectDownload = () => {
-  const img = modalImage.groupImages?.[modalIndex];
-  const url = img ? `${BUCKET_URL}/${img.s3Key}` : modalImage.url;
-  const filename =
-    img?.imageName || modalImage.imageName || img?.s3Key || "image.jpg";
-
-  // Debug logging
-  console.log("🔽 Download URL:", url);
-  console.log("🔽 Filename:", filename);
-
-  downloadImage(url, filename);
-};
-
-
   async function deleteGroupAndAllPhotos(groupId) {
     const imgs = images.filter((img) => img.groupId === groupId);
     for (let img of imgs) {
@@ -913,13 +899,19 @@ const handleDirectDownload = () => {
             </div>
             <div className="modal-action-row">
               <button
-                onClick={handleDirectDownload}
-                className={`modal-download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage.groupImages?.[modalIndex] || modalImage) ? "disabled" : ""}`}
+                onClick={() =>
+                  downloadImage(
+                    modalImage.groupImages?.[modalIndex]
+                      ? `${BUCKET_URL}/${modalImage.groupImages[modalIndex].s3Key}`
+                      : modalImage.url,
+                    modalImage.groupImages?.[modalIndex]?.imageName ||
+                      modalImage.imageName ||
+                      "image.jpg",
+                  )
+                }
+                className="modal-download-btn"
               >
                 <FaDownload />
-                {isInternalOnly(modalImage.groupMeta, modalImage.groupImages?.[modalIndex] || modalImage) && (
-                  <FaLock style={{ color: "#888" }} />
-                )}
                 <span>Download Image</span>
               </button>
               {/* NOTES POPUP BUTTON */}
@@ -988,13 +980,19 @@ const handleDirectDownload = () => {
             </span>
             <div className="modal-action-row">
                 <button
-                  onClick={handleDirectDownload}
-                  className={`modal-download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage.groupImages?.[modalIndex] || modalImage) ? "disabled" : ""}`}
+                  onClick={() =>
+                    downloadImage(
+                      modalImage.groupImages?.[modalIndex]
+                        ? `${BUCKET_URL}/${modalImage.groupImages[modalIndex].s3Key}`
+                        : modalImage.url,
+                      modalImage.groupImages?.[modalIndex]?.imageName ||
+                        modalImage.imageName ||
+                        "image.jpg",
+                    )
+                  }
+                  className="modal-download-btn"
                 >
                   <FaDownload />
-                  {isInternalOnly(modalImage.groupMeta, modalImage.groupImages?.[modalIndex] || modalImage) && (
-                    <FaLock style={{ color: "#888" }} />
-                  )}
                   <span>Download Image</span>
                 </button>
               {/* NOTES POPUP BUTTON */}
