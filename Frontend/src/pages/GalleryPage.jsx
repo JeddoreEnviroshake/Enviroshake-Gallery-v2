@@ -22,7 +22,6 @@ import "swiper/css";
 import "swiper/css/navigation";
 import { FaTrashAlt, FaLock, FaDownload } from "react-icons/fa";
 import { StickyNote } from "lucide-react";
-import { downloadSingleImage } from "../utils/download";
 
 const BUCKET_URL = "https://enviroshake-gallery-images.s3.amazonaws.com";
 
@@ -296,35 +295,6 @@ export default function GalleryPage() {
     setIsDownloading(false);
   };
 
-  // 🔍 DEBUGGING DOWNLOAD FAILURE FROM MODAL in GalleryPage.jsx
-  // Update handleModalImageDownload to log image URL and fileName for troubleshooting
-  const handleModalImageDownload = () => {
-    if (!modalImage) return;
-
-    let img = null;
-    if (modalImage.groupImages && modalImage.groupImages.length) {
-      img = modalImage.groupImages[modalIndex];
-    }
-
-    const url = img ? `${BUCKET_URL}/${img.s3Key}` : modalImage.url;
-    if (!url) return;
-
-    const fileName =
-      img?.imageName ||
-      modalImage.imageName ||
-      img?.s3Key ||
-      modalImage.s3Key;
-
-    // 🔧 TEMP DEBUG LOGS
-    console.log("\u2B07\uFE0F Modal Image Download Debug:");
-    console.log("\u2192 URL:", url);
-    console.log("\u2192 Filename:", fileName);
-    console.log("\u2192 S3 Key:", img?.s3Key || modalImage?.s3Key);
-
-    downloadSingleImage(url, fileName);
-  };
-
-  // DELETE HANDLERS
   async function deleteGroupAndAllPhotos(groupId) {
     const imgs = images.filter((img) => img.groupId === groupId);
     for (let img of imgs) {
@@ -902,17 +872,19 @@ export default function GalleryPage() {
               ))}
             </div>
             <div className="modal-action-row">
-              <button
-                onClick={handleModalImageDownload}
-                className={`modal-download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage.groupImages[modalIndex]) ? "disabled" : ""}`}
+              <a
+                href={modalImage.groupImages?.length ? `${BUCKET_URL}/${modalImage.groupImages[modalIndex]?.s3Key}` : modalImage.url}
+                download={modalImage.groupImages?.length ? modalImage.groupImages[modalIndex]?.imageName || "image.jpg" : modalImage.imageName || "image.jpg"}
+                className={`modal-download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage.groupImages?.[modalIndex] || modalImage) ? "disabled" : ""}`}
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 <FaDownload />
-                {isInternalOnly(
-                  modalImage.groupMeta,
-                  modalImage.groupImages[modalIndex],
-                ) && <FaLock style={{ color: "#888" }} />}
+                {isInternalOnly(modalImage.groupMeta, modalImage.groupImages?.[modalIndex] || modalImage) && (
+                  <FaLock style={{ color: "#888" }} />
+                )}
                 <span>Download Image</span>
-              </button>
+              </a>
               {/* NOTES POPUP BUTTON */}
               <button
                 onClick={handleOpenNotesPopup}
@@ -978,16 +950,19 @@ export default function GalleryPage() {
               <FaTrashAlt />
             </span>
             <div className="modal-action-row">
-              <button
-                onClick={handleModalImageDownload}
-                className={`modal-download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage) ? "disabled" : ""}`}
-              >
-                <FaDownload />
-                {isInternalOnly(modalImage.groupMeta, modalImage) && (
-                  <FaLock style={{ color: "#888" }} />
-                )}
-                <span>Download Image</span>
-              </button>
+                <a
+                  href={modalImage.groupImages?.length ? `${BUCKET_URL}/${modalImage.groupImages[modalIndex]?.s3Key}` : modalImage.url}
+                  download={modalImage.groupImages?.length ? modalImage.groupImages[modalIndex]?.imageName || "image.jpg" : modalImage.imageName || "image.jpg"}
+                  className={`modal-download-btn ${modalImage.groupMeta && isInternalOnly(modalImage.groupMeta, modalImage.groupImages?.[modalIndex] || modalImage) ? "disabled" : ""}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FaDownload />
+                  {isInternalOnly(modalImage.groupMeta, modalImage.groupImages?.[modalIndex] || modalImage) && (
+                    <FaLock style={{ color: "#888" }} />
+                  )}
+                  <span>Download Image</span>
+                </a>
               {/* NOTES POPUP BUTTON */}
               <button
                 onClick={handleOpenNotesPopup}
