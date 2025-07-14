@@ -295,19 +295,33 @@ export default function GalleryPage() {
     setIsDownloading(false);
   };
 
-  const handleDirectDownload = () => {
-    const img = modalImage.groupImages?.[modalIndex];
-    const url = img ? `${BUCKET_URL}/${img.s3Key}` : modalImage.url;
-    const filename =
-      img?.imageName || modalImage.imageName || img?.s3Key || "image.jpg";
+const handleDirectDownload = async () => {
+  const img = modalImage.groupImages?.[modalIndex];
+  const url = img ? `${BUCKET_URL}/${img.s3Key}` : modalImage.url;
+  const filename =
+    img?.imageName || modalImage.imageName || img?.s3Key || "image.jpg";
+
+  try {
+    const response = await fetch(url, { mode: "cors" });
+    if (!response.ok) throw new Error("Failed to fetch file");
+
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
 
     const link = document.createElement("a");
-    link.href = url;
+    link.href = blobUrl;
     link.setAttribute("download", filename);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error("Image download failed:", error);
+    alert("Download failed. Please check your connection or try again.");
+  }
+};
+
 
   async function deleteGroupAndAllPhotos(groupId) {
     const imgs = images.filter((img) => img.groupId === groupId);
