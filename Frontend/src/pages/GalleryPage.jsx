@@ -295,7 +295,7 @@ export default function GalleryPage() {
     setIsDownloading(false);
   };
 
-const handleDirectDownload = async () => {
+const handleDirectDownload = () => {
   const img = modalImage.groupImages?.[modalIndex];
   const url = img ? `${BUCKET_URL}/${img.s3Key}` : modalImage.url;
   const filename =
@@ -306,25 +306,12 @@ const handleDirectDownload = async () => {
   console.log("🔽 Filename:", filename);
 
   try {
-    const response = await fetch(url, { mode: "cors" });
-    console.log("🧪 Response status:", response.status);
-
-    if (!response.ok) {
-      console.error("❌ Fetch failed with status:", response.status);
-      throw new Error("Failed to fetch file");
-    }
-
-    const blob = await response.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
-
     const link = document.createElement("a");
-    link.href = blobUrl;
+    link.href = url;
     link.setAttribute("download", filename);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    window.URL.revokeObjectURL(blobUrl);
   } catch (error) {
     console.error("❌ Image download failed:", error);
     alert("Download failed. Please check your connection or try again.");
