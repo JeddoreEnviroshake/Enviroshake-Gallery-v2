@@ -296,6 +296,8 @@ export default function GalleryPage() {
     setIsDownloading(false);
   };
 
+  // 🔍 DEBUGGING DOWNLOAD FAILURE FROM MODAL in GalleryPage.jsx
+  // Update handleModalImageDownload to log image URL and fileName for troubleshooting
   const handleModalImageDownload = () => {
     if (!modalImage) return;
 
@@ -312,6 +314,12 @@ export default function GalleryPage() {
       modalImage.imageName ||
       img?.s3Key ||
       modalImage.s3Key;
+
+    // 🔧 TEMP DEBUG LOGS
+    console.log("\u2B07\uFE0F Modal Image Download Debug:");
+    console.log("\u2192 URL:", url);
+    console.log("\u2192 Filename:", fileName);
+    console.log("\u2192 S3 Key:", img?.s3Key || modalImage?.s3Key);
 
     downloadSingleImage(url, fileName);
   };
