@@ -307,6 +307,7 @@ const handleDirectDownload = async () => {
 
   try {
     const response = await fetch(url, { mode: "cors" });
+    console.log("🧪 Response status:", response.status);
 
     if (!response.ok) {
       console.error("❌ Fetch failed with status:", response.status);
