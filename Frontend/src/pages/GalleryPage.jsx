@@ -22,6 +22,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import { FaTrashAlt, FaLock, FaDownload } from "react-icons/fa";
 import { StickyNote } from "lucide-react";
+import { downloadSingleImage } from "../utils/download";
 
 const BUCKET_URL = "https://enviroshake-gallery-images.s3.amazonaws.com";
 
@@ -297,20 +298,22 @@ export default function GalleryPage() {
 
   const handleModalImageDownload = () => {
     if (!modalImage) return;
-    if (modalImage.groupImages && modalImage.groupImages.length > 1) {
-      const img = modalImage.groupImages[modalIndex];
-      const url = `${BUCKET_URL}/${img.s3Key}`;
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = url.split("/").pop() || "image.jpg";
-      link.click();
-    } else if (modalImage.url) {
-      const url = modalImage.url;
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = url.split("/").pop() || "image.jpg";
-      link.click();
+
+    let img = null;
+    if (modalImage.groupImages && modalImage.groupImages.length) {
+      img = modalImage.groupImages[modalIndex];
     }
+
+    const url = img ? `${BUCKET_URL}/${img.s3Key}` : modalImage.url;
+    if (!url) return;
+
+    const fileName =
+      img?.imageName ||
+      modalImage.imageName ||
+      img?.s3Key ||
+      modalImage.s3Key;
+
+    downloadSingleImage(url, fileName);
   };
 
   // DELETE HANDLERS
