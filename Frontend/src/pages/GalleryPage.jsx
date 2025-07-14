@@ -301,9 +301,17 @@ const handleDirectDownload = async () => {
   const filename =
     img?.imageName || modalImage.imageName || img?.s3Key || "image.jpg";
 
+  // Debug logging
+  console.log("🔽 Download URL:", url);
+  console.log("🔽 Filename:", filename);
+
   try {
     const response = await fetch(url, { mode: "cors" });
-    if (!response.ok) throw new Error("Failed to fetch file");
+
+    if (!response.ok) {
+      console.error("❌ Fetch failed with status:", response.status);
+      throw new Error("Failed to fetch file");
+    }
 
     const blob = await response.blob();
     const blobUrl = window.URL.createObjectURL(blob);
@@ -317,7 +325,7 @@ const handleDirectDownload = async () => {
 
     window.URL.revokeObjectURL(blobUrl);
   } catch (error) {
-    console.error("Image download failed:", error);
+    console.error("❌ Image download failed:", error);
     alert("Download failed. Please check your connection or try again.");
   }
 };
