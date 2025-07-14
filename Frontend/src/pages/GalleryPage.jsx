@@ -70,6 +70,32 @@ const makeOptions = (arr) => arr.map((item) => ({ label: item, value: item }));
 const formatImageName = (groupName, index) =>
   `${groupName}_${String(index + 1).padStart(3, "0")}`;
 
+// Fetches an image from a public S3 URL and triggers a browser download using a blob
+const downloadImage = async (url, filename) => {
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    alert("Download failed. Please check your connection or try again.");
+    console.error("Download error:", error);
+  }
+};
+
 export default function GalleryPage() {
   const [images, setImages] = useState([]);
   const [groups, setGroups] = useState({});
@@ -305,17 +331,7 @@ const handleDirectDownload = () => {
   console.log("🔽 Download URL:", url);
   console.log("🔽 Filename:", filename);
 
-  try {
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (error) {
-    console.error("❌ Image download failed:", error);
-    alert("Download failed. Please check your connection or try again.");
-  }
+  downloadImage(url, filename);
 };
 
 
