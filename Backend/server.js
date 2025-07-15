@@ -43,6 +43,7 @@ app.post("/generate-upload-url", async (req, res) => {
     Key: key,
     Expires: 60,
     ContentType: fileType,
+    ContentDisposition: "attachment",
   };
 
   try {
