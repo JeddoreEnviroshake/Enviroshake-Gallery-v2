@@ -817,6 +817,16 @@ export default function GalleryPage() {
                   modalIndex,
                 )}
               </div>
+              <div
+                style={{
+                  fontSize: "0.9rem",
+                  color: "#666",
+                  marginTop: 4,
+                  marginBottom: 8,
+                }}
+              >
+                {modalIndex + 1} of {modalImage.groupImages.length}
+              </div>
             </div>
             <Swiper
               modules={[Navigation]}
