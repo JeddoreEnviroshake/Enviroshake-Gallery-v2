@@ -887,16 +887,22 @@ export default function GalleryPage() {
             <div className="modal-action-row">
               <button
                 onClick={() =>
-                  handleDownload(
-                    modalImage.groupImages?.[modalIndex] ?? modalImage,
-                  )
+                  modalImage.groupId
+                    ? handleDownloadGroup(modalImage.groupId)
+                    : handleDownload(
+                        modalImage.groupImages?.[modalIndex] ?? modalImage,
+                      )
                 }
-                disabled={!(
-                  (modalImage.groupImages?.[modalIndex]?.s3Key ||
-                    modalImage.groupImages?.[modalIndex]?.s3Url ||
-                    modalImage.s3Key ||
-                    modalImage.s3Url)
-                )}
+                disabled={
+                  modalImage.groupId
+                    ? false
+                    : !(
+                        (modalImage.groupImages?.[modalIndex]?.s3Key ||
+                          modalImage.groupImages?.[modalIndex]?.s3Url ||
+                          modalImage.s3Key ||
+                          modalImage.s3Url)
+                      )
+                }
                 className="modal-download-btn"
               >
                 <FaDownload />
@@ -969,16 +975,22 @@ export default function GalleryPage() {
             <div className="modal-action-row">
               <button
                 onClick={() =>
-                  handleDownload(
-                    modalImage.groupImages?.[modalIndex] ?? modalImage,
-                  )
+                  modalImage.groupId
+                    ? handleDownloadGroup(modalImage.groupId)
+                    : handleDownload(
+                        modalImage.groupImages?.[modalIndex] ?? modalImage,
+                      )
                 }
-                disabled={!(
-                  (modalImage.groupImages?.[modalIndex]?.s3Key ||
-                    modalImage.groupImages?.[modalIndex]?.s3Url ||
-                    modalImage.s3Key ||
-                    modalImage.s3Url)
-                )}
+                disabled={
+                  modalImage.groupId
+                    ? false
+                    : !(
+                        (modalImage.groupImages?.[modalIndex]?.s3Key ||
+                          modalImage.groupImages?.[modalIndex]?.s3Url ||
+                          modalImage.s3Key ||
+                          modalImage.s3Url)
+                      )
+                }
                 className="modal-download-btn"
               >
                 <FaDownload />
