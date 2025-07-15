@@ -817,19 +817,6 @@ export default function GalleryPage() {
                   modalIndex,
                 )}
               </div>
-              <div
-                style={{
-                  fontSize: "0.9rem",
-                  color: "#666",
-                  marginTop: 4,
-                  marginBottom: 8,
-                }}
-              >
-                {modalIndex + 1} of {modalImage.groupImages.length} |{" "}
-                {modalImage?.groupMeta?.timestamp?.toDate
-                  ? modalImage.groupMeta.timestamp.toDate().toLocaleString()
-                  : "-"}
-              </div>
             </div>
             <Swiper
               modules={[Navigation]}
@@ -934,18 +921,6 @@ export default function GalleryPage() {
                   modalImage?.groupMeta?.groupName || modalImage?.groupId || "",
                   0,
                 )}
-              </div>
-              <div
-                style={{
-                  fontSize: "0.9rem",
-                  color: "#666",
-                  marginTop: 4,
-                  marginBottom: 8,
-                }}
-              >
-                {modalImage?.groupMeta?.timestamp?.toDate
-                  ? modalImage.groupMeta.timestamp.toDate().toLocaleString()
-                  : "-"}
               </div>
             </div>
             <img
