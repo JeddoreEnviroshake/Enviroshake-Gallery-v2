@@ -103,7 +103,7 @@ export default function GalleryPage() {
   const [groupFilter, setGroupFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalImage] = useState(null);
+  const [modalImage, setModalImage] = useState(null);
   const [modalIndex, setModalIndex] = useState(0);
   const [mainSwiper, setMainSwiper] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -358,6 +358,17 @@ export default function GalleryPage() {
     setDeleteTarget(null);
     setModalOpen(false);
   }
+
+  const handleImageClick = (groupId, index = 0) => {
+    const groupImages = grouped[groupId] || [];
+    const groupMeta = groups[groupId];
+    const activeImg = groupImages[index] || {};
+    const url =
+      activeImg.s3Key ? `${BUCKET_URL}/${activeImg.s3Key}` : activeImg.url;
+    setModalImage({ url, groupId, groupImages, groupMeta });
+    setModalIndex(index);
+    setModalOpen(true);
+  };
 
 
   // EDIT MODAL
@@ -696,17 +707,13 @@ export default function GalleryPage() {
 
                 {/* Main image */}
                 <div className="image-wrapper">
-                  <a
-                    href={`${BUCKET_URL}/${firstImage.s3Key}`}
-                    download
-                  >
-                    <img
-                      src={`${BUCKET_URL}/${firstImage.s3Key}`}
-                      alt="Group Thumbnail"
-                      className="gallery-thumbnail"
-                      style={{ cursor: "pointer" }}
-                    />
-                  </a>
+                  <img
+                    src={`${BUCKET_URL}/${firstImage.s3Key}`}
+                    alt="Group Thumbnail"
+                    className="gallery-thumbnail"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => handleImageClick(groupId, 0)}
+                  />
                   {isGroup && groupImages.length > 1 && (
                     <span
                       style={{
@@ -841,18 +848,16 @@ export default function GalleryPage() {
                       height: "100%",
                     }}
                   >
-                    <a href={`${BUCKET_URL}/${img.s3Key}`} download>
-                      <img
-                        src={`${BUCKET_URL}/${img.s3Key}`}
-                        alt=""
-                        className="modal-main-image"
-                        style={{
-                          maxWidth: "100%",
-                          borderRadius: "10px",
-                          display: "block",
-                        }}
-                      />
-                    </a>
+                    <img
+                      src={`${BUCKET_URL}/${img.s3Key}`}
+                      alt=""
+                      className="modal-main-image"
+                      style={{
+                        maxWidth: "100%",
+                        borderRadius: "10px",
+                        display: "block",
+                      }}
+                    />
                     <span
                       className="delete-icon"
                       title="Delete photo"
@@ -867,17 +872,16 @@ export default function GalleryPage() {
             </Swiper>
             <div className="thumbnail-row">
               {modalImage.groupImages.map((img, idx) => (
-                <a key={img.id} href={`${BUCKET_URL}/${img.s3Key}`} download>
-                  <img
-                    src={`${BUCKET_URL}/${img.s3Key}`}
-                    alt=""
-                    className={`thumbnail${modalIndex === idx ? " selected" : ""}`}
-                    onClick={() => {
-                      setModalIndex(idx);
-                      if (mainSwiper) mainSwiper.slideTo(idx);
-                    }}
-                  />
-                </a>
+                <img
+                  key={img.id}
+                  src={`${BUCKET_URL}/${img.s3Key}`}
+                  alt=""
+                  className={`thumbnail${modalIndex === idx ? " selected" : ""}`}
+                  onClick={() => {
+                    setModalIndex(idx);
+                    if (mainSwiper) mainSwiper.slideTo(idx);
+                  }}
+                />
               ))}
             </div>
             <div className="modal-action-row">
@@ -938,18 +942,16 @@ export default function GalleryPage() {
                   : "-"}
               </div>
             </div>
-            <a href={modalImage.url} download>
-              <img
-                src={modalImage.url}
-                alt=""
-                className="modal-main-image"
-                style={{
-                  maxWidth: "100%",
-                  borderRadius: "10px",
-                  display: "block",
-                }}
-              />
-            </a>
+            <img
+              src={modalImage.url}
+              alt=""
+              className="modal-main-image"
+              style={{
+                maxWidth: "100%",
+                borderRadius: "10px",
+                display: "block",
+              }}
+            />
             <span
               className="delete-icon"
               title="Delete photo"
