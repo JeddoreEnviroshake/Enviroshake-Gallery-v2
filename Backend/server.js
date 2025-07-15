@@ -1,5 +1,7 @@
 const express = require("express");
 const AWS = require("aws-sdk");
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -16,12 +18,21 @@ app.use(express.json());
 // Firestore initialization
 const db = getFirestore();
 
-// AWS S3 setup
+// AWS S3 setup for downloads and deletes (AWS SDK v2)
 const s3 = new AWS.S3({
   region: process.env.AWS_REGION,
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   signatureVersion: "v4",
+});
+
+// AWS S3 client for presigned uploads (AWS SDK v3)
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
 });
 
 // Validate bucket env var
@@ -38,16 +49,15 @@ app.post("/generate-upload-url", async (req, res) => {
   }
 
   const key = `uploads/${Date.now()}_${fileName}`;
-  const params = {
+  const command = new PutObjectCommand({
     Bucket: BUCKET,
     Key: key,
-    Expires: 60,
     ContentType: fileType,
     ContentDisposition: "attachment",
-  };
+  });
 
   try {
-    const uploadURL = await s3.getSignedUrlPromise("putObject", params);
+    const uploadURL = await getSignedUrl(s3Client, command, { expiresIn: 60 });
     res.send({ uploadURL, key });
   } catch {
     res.status(500).json({ error: "Failed to generate upload URL" });
