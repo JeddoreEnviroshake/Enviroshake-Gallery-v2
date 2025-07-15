@@ -70,30 +70,25 @@ const makeOptions = (arr) => arr.map((item) => ({ label: item, value: item }));
 const formatImageName = (groupName, index) =>
   `${groupName}_${String(index + 1).padStart(3, "0")}`;
 
-// Fetches an image from a public S3 URL and triggers a browser download using a blob
-const downloadImage = async (url, filename) => {
-  try {
-    const response = await fetch(url);
+// Triggers a browser download using a temporary anchor element
+const downloadImage = (url, filename) => {
+  if (!url) return;
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename || "image.jpg";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+};
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    const blob = await response.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    window.URL.revokeObjectURL(blobUrl);
-  } catch (error) {
-    alert("Download failed. Please check your connection or try again.");
-    console.error("Download error:", error);
-  }
+// Determines the download URL from image data and triggers the download
+const handleDownload = (activeImg) => {
+  if (!activeImg) return;
+  const url =
+    activeImg.s3Url ||
+    (activeImg.s3Key ? `${BUCKET_URL}/${activeImg.s3Key}` : activeImg.url);
+  if (!url) return;
+  downloadImage(url, activeImg.imageName || "image.jpg");
 };
 
 export default function GalleryPage() {
@@ -366,6 +361,13 @@ export default function GalleryPage() {
 
   // MODAL PREVIEW
   const openModal = ({ url, groupId, groupImages, groupMeta, index }) => {
+    console.log("Opening modal with:", {
+      url,
+      groupId,
+      groupImages,
+      groupMeta,
+      index,
+    });
     setModalImage({
       url,
       groupId,
@@ -900,15 +902,16 @@ export default function GalleryPage() {
             <div className="modal-action-row">
               <button
                 onClick={() =>
-                  downloadImage(
-                    modalImage.groupImages?.[modalIndex]
-                      ? `${BUCKET_URL}/${modalImage.groupImages[modalIndex].s3Key}`
-                      : modalImage.url,
-                    modalImage.groupImages?.[modalIndex]?.imageName ||
-                      modalImage.imageName ||
-                      "image.jpg",
+                  handleDownload(
+                    modalImage.groupImages?.[modalIndex] ?? modalImage,
                   )
                 }
+                disabled={!(
+                  (modalImage.groupImages?.[modalIndex]?.s3Key ||
+                    modalImage.groupImages?.[modalIndex]?.s3Url ||
+                    modalImage.s3Key ||
+                    modalImage.s3Url)
+                )}
                 className="modal-download-btn"
               >
                 <FaDownload />
@@ -979,22 +982,23 @@ export default function GalleryPage() {
               <FaTrashAlt />
             </span>
             <div className="modal-action-row">
-                <button
-                  onClick={() =>
-                    downloadImage(
-                      modalImage.groupImages?.[modalIndex]
-                        ? `${BUCKET_URL}/${modalImage.groupImages[modalIndex].s3Key}`
-                        : modalImage.url,
-                      modalImage.groupImages?.[modalIndex]?.imageName ||
-                        modalImage.imageName ||
-                        "image.jpg",
-                    )
-                  }
-                  className="modal-download-btn"
-                >
-                  <FaDownload />
-                  <span>Download Image</span>
-                </button>
+              <button
+                onClick={() =>
+                  handleDownload(
+                    modalImage.groupImages?.[modalIndex] ?? modalImage,
+                  )
+                }
+                disabled={!(
+                  (modalImage.groupImages?.[modalIndex]?.s3Key ||
+                    modalImage.groupImages?.[modalIndex]?.s3Url ||
+                    modalImage.s3Key ||
+                    modalImage.s3Url)
+                )}
+                className="modal-download-btn"
+              >
+                <FaDownload />
+                <span>Download Image</span>
+              </button>
               {/* NOTES POPUP BUTTON */}
               <button
                 onClick={handleOpenNotesPopup}
