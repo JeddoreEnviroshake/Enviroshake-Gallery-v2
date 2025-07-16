@@ -250,21 +250,28 @@ export default function GalleryPage() {
         const imgNum = String(lastIdx + i + 1).padStart(3, "0");
         const baseName = groupMeta.groupName || groupId;
         const generatedName = `${baseName}_${imgNum}`;
+        const fileType = file.type || "image/jpeg";
 
         const res = await fetch("http://localhost:4000/generate-upload-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fileName: `${generatedName}${extension}`,
-            fileType: file.type,
+            fileType: file.type || "image/jpeg",
           }),
         });
         const { uploadURL, key } = await res.json();
 
+        console.log("Uploading to S3 →", {
+          fileName: file.name,
+          fileType: file.type,
+          fallbackUsed: !file.type,
+        });
+
         const uploadRes = await fetch(uploadURL, {
           method: "PUT",
           headers: {
-            "Content-Type": file.type,
+            "Content-Type": fileType,
           },
           body: file,
         });
