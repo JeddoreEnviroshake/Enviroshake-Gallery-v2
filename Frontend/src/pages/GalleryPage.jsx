@@ -993,7 +993,7 @@ export default function GalleryPage() {
                   }}
                 />
               ))}
-              {modalImage.groupId && (
+              {modalImage.groupImages.length > 1 && (
                 <div
                   className="thumbnail add-thumb"
                   title="Add Photo"
@@ -1008,19 +1008,6 @@ export default function GalleryPage() {
               )}
             </div>
             <div className="modal-action-row">
-              {modalImage.groupId && (
-                <div
-                  className="modal-add-btn"
-                  title="Add Photo"
-                  onClick={openAddPhotoDialog}
-                  style={{
-                    opacity: addingPhotos ? 0.6 : 1,
-                    pointerEvents: addingPhotos ? "none" : "auto",
-                  }}
-                >
-                  +
-                </div>
-              )}
               <button
                 onClick={() =>
                   modalImage.groupId
@@ -1097,6 +1084,19 @@ export default function GalleryPage() {
               <FaTrashAlt />
             </span>
             <div className="modal-action-row">
+              {modalImage.groupImages?.length === 1 && (
+                <div
+                  className="modal-add-btn"
+                  title="Add Photo"
+                  onClick={openAddPhotoDialog}
+                  style={{
+                    opacity: addingPhotos ? 0.6 : 1,
+                    pointerEvents: addingPhotos ? "none" : "auto",
+                  }}
+                >
+                  +
+                </div>
+              )}
               <button
                 onClick={() =>
                   modalImage.groupId
