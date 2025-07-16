@@ -100,7 +100,7 @@ const handleDownload = (activeImg) => {
 };
 
 // Upload helper that reports progress
-const uploadFileWithProgress = (url, file, fileType, onProgress) => {
+const uploadFileWithProgress = (file, url, onProgress) => {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.upload.onprogress = (e) => {
@@ -117,7 +117,10 @@ const uploadFileWithProgress = (url, file, fileType, onProgress) => {
     };
     xhr.onerror = () => reject(new Error("Upload failed"));
     xhr.open("PUT", url);
-    xhr.setRequestHeader("Content-Type", fileType);
+    xhr.setRequestHeader(
+      "Content-Type",
+      file.type || "application/octet-stream",
+    );
     xhr.send(file);
   });
 };
@@ -275,7 +278,6 @@ export default function GalleryPage() {
         const imgNum = String(lastIdx + i + 1).padStart(3, "0");
         const baseName = groupMeta.groupName || groupId;
         const generatedName = `${baseName}_${imgNum}`;
-        const fileType = file.type || "image/jpeg";
 
         const res = await fetch("http://localhost:4000/generate-upload-url", {
           method: "POST",
@@ -293,7 +295,7 @@ export default function GalleryPage() {
           fallbackUsed: !file.type,
         });
 
-        await uploadFileWithProgress(uploadURL, file, fileType, (p) => {
+        await uploadFileWithProgress(file, uploadURL, (p) => {
           setUploadProgress(
             Math.round(((i + p / 100) / files.length) * 100),
           );
