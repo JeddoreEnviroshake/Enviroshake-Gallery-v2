@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   collection,
@@ -9,6 +9,8 @@ import {
   updateDoc,
   getDocs,
   deleteDoc,
+  addDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db, auth } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -69,6 +71,12 @@ const makeOptions = (arr) => arr.map((item) => ({ label: item, value: item }));
 
 const formatImageName = (groupName, index) =>
   `${groupName}_${String(index + 1).padStart(3, "0")}`;
+
+const getFileExt = (fileName) => {
+  if (!fileName) return "";
+  const idx = fileName.lastIndexOf(".");
+  return idx !== -1 ? fileName.substring(idx) : "";
+};
 
 // Triggers a browser download using a temporary anchor element
 const downloadImage = (url, filename) => {
@@ -131,6 +139,9 @@ export default function GalleryPage() {
   const [notesEditMode, setNotesEditMode] = useState(false);
   const [notesSaving, setNotesSaving] = useState(false);
 
+  const addInputRef = useRef(null);
+  const [addingPhotos, setAddingPhotos] = useState(false);
+
   const pageSize = 20;
 
   useEffect(() => {
@@ -171,6 +182,12 @@ export default function GalleryPage() {
     setNotesSaving(false);
   }, [modalOpen, modalImage, modalIndex]);
 
+  useEffect(() => {
+    if (!modalOpen && addInputRef.current) {
+      addInputRef.current.value = "";
+    }
+  }, [modalOpen]);
+
   const handleOpenNotesPopup = () => {
     let img =
       modalImage.groupImages && modalImage.groupImages.length
@@ -197,6 +214,94 @@ export default function GalleryPage() {
       alert("Failed to save notes. " + e.message);
     }
     setNotesSaving(false);
+  };
+
+  const openAddPhotoDialog = () => {
+    if (addingPhotos) return;
+    if (addInputRef.current) {
+      addInputRef.current.value = "";
+      addInputRef.current.click();
+    }
+  };
+
+  const addPhotosToGroup = async (files) => {
+    if (!modalImage?.groupImages?.length) return;
+    const first = modalImage.groupImages[0];
+    const groupId = first.groupId;
+    if (!groupId) {
+      alert("Cannot add photos to an ungrouped image.");
+      return;
+    }
+    const groupMeta = modalImage.groupMeta || {};
+    setAddingPhotos(true);
+    try {
+      let lastIdx = 0;
+      modalImage.groupImages.forEach((img) => {
+        const m = img.imageName && img.imageName.match(/_(\d+)$/);
+        if (m) {
+          const n = parseInt(m[1], 10);
+          if (n > lastIdx) lastIdx = n;
+        }
+      });
+
+      for (let i = 0; i < files.length; ++i) {
+        const file = files[i];
+        const extension = getFileExt(file.name);
+        const imgNum = String(lastIdx + i + 1).padStart(3, "0");
+        const baseName = groupMeta.groupName || groupId;
+        const generatedName = `${baseName}_${imgNum}`;
+
+        const res = await fetch("http://localhost:4000/generate-upload-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: `${generatedName}${extension}`,
+            fileType: file.type,
+          }),
+        });
+        const { uploadURL, key } = await res.json();
+
+        await fetch(uploadURL, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+
+        await addDoc(collection(db, "images"), {
+          groupId,
+          groupName: groupMeta.groupName || groupId,
+          colors: groupMeta.colors || [],
+          productLine: groupMeta.productLine || "",
+          roofTags: groupMeta.roofTags || [],
+          projectTags: groupMeta.projectTags || [],
+          countryTags: groupMeta.countryTags || [],
+          notes: groupMeta.notes || "",
+          projectName: groupId.split("_").slice(2).join("_") || "",
+          imageName: generatedName,
+          internalOnly: groupMeta.internalOnly || false,
+          s3Key: key,
+          uploadedBy: userEmail,
+          timestamp: serverTimestamp(),
+        });
+      }
+
+      if (groupMeta.docId) {
+        await updateDoc(doc(db, "imageGroups", groupMeta.docId), {
+          imageCount:
+            (groupMeta.imageCount || modalImage.groupImages.length) +
+            files.length,
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to upload image(s).");
+    }
+    setAddingPhotos(false);
+  };
+
+  const handleAddPhotoChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length) addPhotosToGroup(files);
   };
 
   const clearAllFilters = () => {
@@ -452,6 +557,14 @@ export default function GalleryPage() {
           opacity: 1;
         }
       `}</style>
+      <input
+        type="file"
+        accept="image/*"
+        multiple
+        ref={addInputRef}
+        onChange={handleAddPhotoChange}
+        style={{ display: "none" }}
+      />
       {/* ====== NAV BAR ====== */}
       <div
         style={{
@@ -880,8 +993,34 @@ export default function GalleryPage() {
                   }}
                 />
               ))}
+              {modalImage.groupId && (
+                <div
+                  className="thumbnail add-thumb"
+                  title="Add Photo"
+                  onClick={openAddPhotoDialog}
+                  style={{
+                    opacity: addingPhotos ? 0.6 : 1,
+                    pointerEvents: addingPhotos ? "none" : "auto",
+                  }}
+                >
+                  +
+                </div>
+              )}
             </div>
             <div className="modal-action-row">
+              {modalImage.groupId && (
+                <div
+                  className="modal-add-btn"
+                  title="Add Photo"
+                  onClick={openAddPhotoDialog}
+                  style={{
+                    opacity: addingPhotos ? 0.6 : 1,
+                    pointerEvents: addingPhotos ? "none" : "auto",
+                  }}
+                >
+                  +
+                </div>
+              )}
               <button
                 onClick={() =>
                   modalImage.groupId
