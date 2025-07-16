@@ -1084,17 +1084,19 @@ export default function GalleryPage() {
               <FaTrashAlt />
             </span>
             <div className="modal-action-row">
-              <div
-                className="modal-add-btn"
-                title="Add Photo"
-                onClick={openAddPhotoDialog}
-                style={{
-                  opacity: addingPhotos ? 0.6 : 1,
-                  pointerEvents: addingPhotos ? "none" : "auto",
-                }}
-              >
-                +
-              </div>
+              {modalImage.groupImages?.length === 1 && (
+                <div
+                  className="modal-add-btn"
+                  title="Add Photo"
+                  onClick={openAddPhotoDialog}
+                  style={{
+                    opacity: addingPhotos ? 0.6 : 1,
+                    pointerEvents: addingPhotos ? "none" : "auto",
+                  }}
+                >
+                  +
+                </div>
+              )}
               <button
                 onClick={() =>
                   modalImage.groupId
