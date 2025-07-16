@@ -261,11 +261,15 @@ export default function GalleryPage() {
         });
         const { uploadURL, key } = await res.json();
 
-        await fetch(uploadURL, {
+        const uploadRes = await fetch(uploadURL, {
           method: "PUT",
-          headers: { "Content-Type": file.type },
           body: file,
+          headers: { "Content-Type": file.type },
         });
+
+        if (!uploadRes.ok) {
+          throw new Error(`Upload failed: ${uploadRes.status}`);
+        }
 
         await addDoc(collection(db, "images"), {
           groupId,
