@@ -257,12 +257,16 @@ export default function GalleryPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fileName: `${generatedName}${extension}`,
-            fileType,
+            fileType: file.type || "image/jpeg",
           }),
         });
         const { uploadURL, key } = await res.json();
 
-        console.log("Uploading:", file.name, "| type:", file.type);
+        console.log("Uploading to S3 →", {
+          fileName: file.name,
+          fileType: file.type,
+          fallbackUsed: !file.type,
+        });
 
         const uploadRes = await fetch(uploadURL, {
           method: "PUT",
