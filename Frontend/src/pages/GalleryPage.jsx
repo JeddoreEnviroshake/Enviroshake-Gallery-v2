@@ -99,6 +99,32 @@ const handleDownload = (activeImg) => {
   downloadImage(url, activeImg.imageName || "image.jpg");
 };
 
+// Upload helper that reports progress
+const uploadFileWithProgress = (file, url, onProgress) => {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress((e.loaded / e.total) * 100);
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        reject(new Error(`Upload failed: ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Upload failed"));
+    xhr.open("PUT", url);
+    xhr.setRequestHeader(
+      "Content-Type",
+      file.type || "application/octet-stream",
+    );
+    xhr.send(file);
+  });
+};
+
 export default function GalleryPage() {
   const [images, setImages] = useState([]);
   const [groups, setGroups] = useState({});
@@ -141,6 +167,8 @@ export default function GalleryPage() {
 
   const addInputRef = useRef(null);
   const [addingPhotos, setAddingPhotos] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [showProgress, setShowProgress] = useState(false);
 
   const pageSize = 20;
 
@@ -234,6 +262,8 @@ export default function GalleryPage() {
     }
     const groupMeta = modalImage.groupMeta || {};
     setAddingPhotos(true);
+    setShowProgress(true);
+    setUploadProgress(0);
     try {
       let lastIdx = 0;
       modalImage.groupImages.forEach((img) => {
@@ -250,7 +280,6 @@ export default function GalleryPage() {
         const imgNum = String(lastIdx + i + 1).padStart(3, "0");
         const baseName = groupMeta.groupName || groupId;
         const generatedName = `${baseName}_${imgNum}`;
-        const fileType = file.type || "image/jpeg";
 
         const res = await fetch("http://localhost:4000/generate-upload-url", {
           method: "POST",
@@ -268,14 +297,11 @@ export default function GalleryPage() {
           fallbackUsed: !file.type,
         });
 
-        const uploadRes = await fetch(uploadURL, {
-          method: "PUT",
-          body: file,
+        await uploadFileWithProgress(file, uploadURL, (p) => {
+          setUploadProgress(
+            Math.round(((i + p / 100) / files.length) * 100),
+          );
         });
-
-        if (!uploadRes.ok) {
-          throw new Error(`Upload failed: ${uploadRes.status}`);
-        }
 
         await addDoc(collection(db, "images"), {
           groupId,
@@ -306,7 +332,9 @@ export default function GalleryPage() {
       console.error(e);
       alert("Failed to upload image(s).");
     }
+    setShowProgress(false);
     setAddingPhotos(false);
+    setUploadProgress(0);
   };
 
   const handleAddPhotoChange = (e) => {
@@ -485,7 +513,6 @@ export default function GalleryPage() {
     setModalOpen(true);
   };
 
-
   // EDIT MODAL
   const openEditModal = ({ groupId, isGroup, groupMeta, firstImage }) => {
     let source = isGroup ? groupMeta : firstImage;
@@ -566,6 +593,18 @@ export default function GalleryPage() {
         .delete-icon:hover, .card:hover .delete-icon {
           opacity: 1;
         }
+        .upload-progress {
+          position: fixed;
+          bottom: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.75);
+          color: white;
+          padding: 8px 14px;
+          border-radius: 8px;
+          z-index: 2000;
+          font-weight: bold;
+        }
       `}</style>
       <input
         type="file"
@@ -575,6 +614,10 @@ export default function GalleryPage() {
         onChange={handleAddPhotoChange}
         style={{ display: "none" }}
       />
+      {showProgress && (
+        <div className="upload-progress">Uploading {uploadProgress}%</div>
+      )}
+
       {/* ====== NAV BAR ====== */}
       <div
         style={{
@@ -657,6 +700,7 @@ export default function GalleryPage() {
           </button>
         </div>
       </div>
+
       {/* ====== FILTERS & SEARCH ====== */}
       <div className="filter-container">
         <div className="search-row">
@@ -684,13 +728,15 @@ export default function GalleryPage() {
           />
           <button
             onClick={downloadSelected}
-            className={`download-btn ${selectedCardIds.length && !isDownloading ? "" : "disabled"}`}
+            className={`download-btn ${
+              selectedCardIds.length && !isDownloading ? "" : "disabled"
+            }`}
             disabled={selectedCardIds.length === 0 || isDownloading}
           >
             {isDownloading ? "Downloading..." : "Download All"}
           </button>
         </div>
-        {/* FILTERS */}
+
         <div className="filter-row">
           <Select
             isMulti
@@ -730,6 +776,7 @@ export default function GalleryPage() {
             onChange={setCountryFilter}
           />
         </div>
+
         {/* ====== GALLERY CARDS ====== */}
         <div
           style={{
@@ -788,11 +835,14 @@ export default function GalleryPage() {
                       disabled={internalOnly}
                     />
                   </div>
+
                   {/* Download Center */}
                   <div style={{ display: "flex", justifyContent: "center" }}>
                     <button
                       onClick={() => handleDownloadGroup(groupId)}
-                      className={`download-btn ${internalOnly ? "disabled" : ""}`}
+                      className={`download-btn ${
+                        internalOnly ? "disabled" : ""
+                      }`}
                       style={{
                         fontSize: "0.98rem",
                         minWidth: 86,
@@ -808,6 +858,7 @@ export default function GalleryPage() {
                       Download
                     </button>
                   </div>
+
                   {/* Pencil Right */}
                   <button
                     title="Edit Name and Tags"
@@ -823,7 +874,9 @@ export default function GalleryPage() {
 
                 {/* Internal Only Row */}
                 <div
-                  className={`internal-banner ${internalOnly ? "" : "hidden"}`}
+                  className={`internal-banner ${
+                    internalOnly ? "" : "hidden"
+                  }`}
                 >
                   Internal Use Only – Not for Marketing
                 </div>
@@ -878,6 +931,7 @@ export default function GalleryPage() {
             );
           })}
         </div>
+
         {/* ====== PAGINATION ====== */}
         <div style={{ marginTop: "2rem", textAlign: "center" }}>
           <button
@@ -908,6 +962,7 @@ export default function GalleryPage() {
           </button>
         </div>
       </div>
+
       {/* ====== MODALS ====== */}
       <Modal
         open={modalOpen}
@@ -1014,7 +1069,7 @@ export default function GalleryPage() {
                   }}
                 >
                   +
-               </div>
+                </div>
               )}
             </div>
             <div className="modal-action-row">
@@ -1093,69 +1148,69 @@ export default function GalleryPage() {
             >
               <FaTrashAlt />
             </span>
-            {modalImage.groupImages?.length === 1 ? (
-              <div
-                className="modal-action-row"
-                style={{ justifyContent: "center", gap: "1rem" }}
+
+            {/* Consolidated action row */}
+            <div className="modal-action-row">
+              <button
+                onClick={openAddPhotoDialog}
+                className="modal-upload-more-btn"
+                title="Add Photo"
+                style={{
+                  border: "1px solid #09713c",
+                  color: "#09713c",
+                  background: "white",
+                  padding: "0.5rem 1.2rem",
+                  borderRadius: "8px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  opacity: addingPhotos ? 0.6 : 1,
+                  pointerEvents: addingPhotos ? "none" : "auto",
+                }}
               >
-                <button
-                  onClick={openAddPhotoDialog}
-                  style={{
-                    border: "1px solid #09713c",
-                    color: "#09713c",
-                    background: "white",
-                    padding: "0.5rem 1.2rem",
-                    borderRadius: "8px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    opacity: addingPhotos ? 0.6 : 1,
-                    pointerEvents: addingPhotos ? "none" : "auto",
-                  }}
-                >
-                  <span style={{ fontSize: "1.2rem" }}>+</span> Add More Photos
-                </button>
+                <span style={{ fontSize: "1.2rem" }}>+</span> Add More Photos
+              </button>
 
-                <button
-                  onClick={() =>
-                    modalImage.groupId
-                      ? handleDownloadGroup(modalImage.groupId)
-                      : handleDownload(
-                          modalImage.groupImages?.[modalIndex] ?? modalImage
-                        )
-                  }
-                  disabled={
-                    modalImage.groupId
-                      ? false
-                      : !(
-                          modalImage.groupImages?.[modalIndex]?.s3Key ||
-                          modalImage.groupImages?.[modalIndex]?.s3Url ||
-                          modalImage.s3Key ||
-                          modalImage.s3Url
-                        )
-                  }
-                  className="modal-download-btn"
-                >
-                  <FaDownload />
-                  <span>Download Image</span>
-                </button>
+              <button
+                onClick={() =>
+                  modalImage.groupId
+                    ? handleDownloadGroup(modalImage.groupId)
+                    : handleDownload(
+                        modalImage.groupImages?.[modalIndex] ?? modalImage,
+                      )
+                }
+                disabled={
+                  modalImage.groupId
+                    ? false
+                    : !(
+                        modalImage.groupImages?.[modalIndex]?.s3Key ||
+                        modalImage.groupImages?.[modalIndex]?.s3Url ||
+                        modalImage.s3Key ||
+                        modalImage.s3Url
+                      )
+                }
+                className="modal-download-btn"
+              >
+                <FaDownload />
+                <span>Download Image</span>
+              </button>
 
-                <button
-                  onClick={handleOpenNotesPopup}
-                  className="modal-notes-btn"
-                  style={{ background: showNotesPopup ? "#e8f7e4" : undefined }}
-                  title="View/Edit Notes"
-                >
-                  <StickyNote size={21} />
-                  <span>Notes</span>
-                </button>
-              </div>
-            ) : null}
+              <button
+                onClick={handleOpenNotesPopup}
+                className="modal-notes-btn"
+                style={{ background: showNotesPopup ? "#e8f7e4" : undefined }}
+                title="View/Edit Notes"
+              >
+                <StickyNote size={21} />
+                <span>Notes</span>
+              </button>
+            </div>
           </div>
         ) : null}
       </Modal>
+
       {/* --- NOTES POPUP MODAL --- */}
       <Modal
         open={showNotesPopup}
@@ -1292,30 +1347,18 @@ export default function GalleryPage() {
             </>
           )}
         </div>
-
       </Modal>
-      <Modal
-        open={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        center
-      >
+
+      {/* Delete Confirmation Modal */}
+      <Modal open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} center>
         <div style={{ padding: "2rem", textAlign: "center" }}>
           {deleteTarget?.type === "group" ? (
             <>
-              <div
-                style={{ fontWeight: 400, marginBottom: 8, fontSize: "1.2rem" }}
-              >
-                Delete group{" "}
-                <span style={{ color: "#be3131" }}>
-                  {deleteTarget.groupName}
-                </span>
-                ?
+              <div style={{ fontWeight: 400, marginBottom: 8, fontSize: "1.2rem" }}>
+                Delete group <span style={{ color: "#be3131" }}>{deleteTarget.groupName}</span>?
               </div>
-              <div
-                style={{ color: "#be3131", fontWeight: 500, marginBottom: 20 }}
-              >
-                This will delete <b>all {deleteTarget.count} photos</b> in this
-                group.
+              <div style={{ color: "#be3131", fontWeight: 500, marginBottom: 20 }}>
+                This will delete <b>all {deleteTarget.count} photos</b> in this group.
                 <br />
                 <b>This action cannot be undone.</b>
               </div>
@@ -1349,15 +1392,9 @@ export default function GalleryPage() {
           ) : deleteTarget?.type === "photo" ? (
             <>
               <div style={{ fontWeight: 400, marginBottom: 8 }}>
-                Delete photo{" "}
-                <span style={{ color: "#be3131" }}>
-                  {deleteTarget.photoName}
-                </span>
-                ?
+                Delete photo <span style={{ color: "#be3131" }}>{deleteTarget.photoName}</span>?
               </div>
-              <div
-                style={{ color: "#be3131", fontWeight: 500, marginBottom: 20 }}
-              >
+              <div style={{ color: "#be3131", fontWeight: 500, marginBottom: 20 }}>
                 This cannot be undone.
               </div>
               <button
@@ -1390,6 +1427,8 @@ export default function GalleryPage() {
           ) : null}
         </div>
       </Modal>
+
+      {/* Edit Modal */}
       <Modal
         open={editModalOpen}
         onClose={() => setEditModalOpen(false)}
