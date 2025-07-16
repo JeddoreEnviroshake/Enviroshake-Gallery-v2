@@ -404,3 +404,23 @@ button:focus-visible {
   background: #075b31;
   transform: scale(1.05);
 }
+
+.photo-modal .modal-upload-more-btn {
+  background: #09713c;
+  color: #fff;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.15s, background-color 0.15s;
+}
+
+.photo-modal .modal-upload-more-btn:hover {
+  background: #075b31;
+  transform: scale(1.05);
+}
