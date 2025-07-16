@@ -1138,8 +1138,8 @@ export default function GalleryPage() {
             </span>
             <div className="modal-action-row">
               {modalImage.groupImages?.length === 1 && (
-                <div
-                  className="modal-add-btn"
+                <button
+                  className="modal-upload-more-btn"
                   title="Add Photo"
                   onClick={openAddPhotoDialog}
                   style={{
@@ -1147,8 +1147,8 @@ export default function GalleryPage() {
                     pointerEvents: addingPhotos ? "none" : "auto",
                   }}
                 >
-                  +
-                </div>
+                  + Add More Photos
+                </button>
               )}
               <button
                 onClick={() =>
