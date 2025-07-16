@@ -165,6 +165,7 @@ export default function GalleryPage() {
   const addInputRef = useRef(null);
   const [addingPhotos, setAddingPhotos] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [showProgress, setShowProgress] = useState(false);
 
   const pageSize = 20;
 
@@ -258,6 +259,7 @@ export default function GalleryPage() {
     }
     const groupMeta = modalImage.groupMeta || {};
     setAddingPhotos(true);
+    setShowProgress(true);
     setUploadProgress(0);
     try {
       let lastIdx = 0;
@@ -328,6 +330,7 @@ export default function GalleryPage() {
       console.error(e);
       alert("Failed to upload image(s).");
     }
+    setShowProgress(false);
     setAddingPhotos(false);
     setUploadProgress(0);
   };
@@ -610,7 +613,7 @@ export default function GalleryPage() {
         onChange={handleAddPhotoChange}
         style={{ display: "none" }}
       />
-      {addingPhotos && (
+      {showProgress && (
         <div className="upload-progress">Uploading {uploadProgress}%</div>
       )}
       {/* ====== NAV BAR ====== */}
