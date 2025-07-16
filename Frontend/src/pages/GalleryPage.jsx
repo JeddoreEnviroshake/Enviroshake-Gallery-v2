@@ -99,6 +99,29 @@ const handleDownload = (activeImg) => {
   downloadImage(url, activeImg.imageName || "image.jpg");
 };
 
+// Upload helper that reports progress
+const uploadFileWithProgress = (url, file, fileType, onProgress) => {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress((e.loaded / e.total) * 100);
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        reject(new Error(`Upload failed: ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Upload failed"));
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("Content-Type", fileType);
+    xhr.send(file);
+  });
+};
+
 export default function GalleryPage() {
   const [images, setImages] = useState([]);
   const [groups, setGroups] = useState({});
@@ -141,6 +164,7 @@ export default function GalleryPage() {
 
   const addInputRef = useRef(null);
   const [addingPhotos, setAddingPhotos] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const pageSize = 20;
 
@@ -234,6 +258,7 @@ export default function GalleryPage() {
     }
     const groupMeta = modalImage.groupMeta || {};
     setAddingPhotos(true);
+    setUploadProgress(0);
     try {
       let lastIdx = 0;
       modalImage.groupImages.forEach((img) => {
@@ -268,14 +293,11 @@ export default function GalleryPage() {
           fallbackUsed: !file.type,
         });
 
-        const uploadRes = await fetch(uploadURL, {
-          method: "PUT",
-          body: file,
+        await uploadFileWithProgress(uploadURL, file, fileType, (p) => {
+          setUploadProgress(
+            Math.round(((i + p / 100) / files.length) * 100),
+          );
         });
-
-        if (!uploadRes.ok) {
-          throw new Error(`Upload failed: ${uploadRes.status}`);
-        }
 
         await addDoc(collection(db, "images"), {
           groupId,
@@ -307,6 +329,7 @@ export default function GalleryPage() {
       alert("Failed to upload image(s).");
     }
     setAddingPhotos(false);
+    setUploadProgress(0);
   };
 
   const handleAddPhotoChange = (e) => {
@@ -566,6 +589,18 @@ export default function GalleryPage() {
         .delete-icon:hover, .card:hover .delete-icon {
           opacity: 1;
         }
+        .upload-progress {
+          position: fixed;
+          bottom: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.75);
+          color: white;
+          padding: 8px 14px;
+          border-radius: 8px;
+          z-index: 2000;
+          font-weight: bold;
+        }
       `}</style>
       <input
         type="file"
@@ -575,6 +610,9 @@ export default function GalleryPage() {
         onChange={handleAddPhotoChange}
         style={{ display: "none" }}
       />
+      {addingPhotos && (
+        <div className="upload-progress">Uploading {uploadProgress}%</div>
+      )}
       {/* ====== NAV BAR ====== */}
       <div
         style={{
