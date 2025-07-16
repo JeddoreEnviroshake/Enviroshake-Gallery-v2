@@ -54,6 +54,7 @@ app.post("/generate-upload-url", async (req, res) => {
     Key: key,
     ContentType: fileType,
     ContentDisposition: "attachment",
+    CacheControl: "public, max-age=31536000", // improves caching and avoids broken image behavior
   });
 
   try {
