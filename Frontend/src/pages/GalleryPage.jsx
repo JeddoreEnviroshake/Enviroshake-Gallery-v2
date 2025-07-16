@@ -263,10 +263,10 @@ export default function GalleryPage() {
 
         const uploadRes = await fetch(uploadURL, {
           method: "PUT",
-          body: file,
           headers: {
             "Content-Type": file.type,
           },
+          body: file,
         });
 
         if (!uploadRes.ok) {

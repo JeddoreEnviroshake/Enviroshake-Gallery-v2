@@ -164,11 +164,16 @@ export default function UploadPage() {
         });
         const { uploadURL, key } = await res.json();
 
-        await fetch(uploadURL, {
+        const uploadRes = await fetch(uploadURL, {
           method: "PUT",
           headers: { "Content-Type": file.type },
           body: file,
         });
+        console.log("Upload response status:", uploadRes.status);
+        if (!uploadRes.ok) {
+          console.log(await uploadRes.text());
+          throw new Error("Failed to upload image");
+        }
 
         // Save image record
         await addDoc(collection(db, "images"), {
