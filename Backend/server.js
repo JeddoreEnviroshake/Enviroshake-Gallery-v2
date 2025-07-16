@@ -1,14 +1,15 @@
+// ✅ Load environment variables from .env file
+require("dotenv").config();
+
 const express = require("express");
 const AWS = require("aws-sdk");
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const { getFirestore } = require("firebase-admin/firestore");
 const admin = require("./firebaseAdmin");
 const downloadGroupRoute = require("./routesDownloadGroup");
 const downloadMultipleGroupsRoute = require("./downloadMultipleGroups");
-dotenv.config();
 
 // Initialize Express app
 const app = express();
@@ -38,29 +39,31 @@ const s3Client = new S3Client({
 // Validate bucket env var
 const BUCKET = process.env.AWS_S3_BUCKET;
 if (!BUCKET) {
+  console.error("Missing AWS_S3_BUCKET in environment");
   process.exit(1);
 }
 
-// Generate pre-signed URL
+// ✅ Generate pre-signed URL — simplified (NO ContentType, NO Metadata)
 app.post("/generate-upload-url", async (req, res) => {
-  const { fileName, fileType } = req.body;
-  if (!fileName || !fileType) {
-    return res.status(400).json({ error: "Missing fileName or fileType" });
+  const { fileName } = req.body;
+
+  if (!fileName) {
+    return res.status(400).json({ error: "Missing fileName" });
   }
 
   const key = `uploads/${Date.now()}_${fileName}`;
+
   const command = new PutObjectCommand({
     Bucket: BUCKET,
     Key: key,
-    ContentType: fileType,
-    ContentDisposition: "attachment",
-    CacheControl: "public, max-age=31536000", // improves caching and avoids broken image behavior
+    // NO ContentType or Metadata
   });
 
   try {
     const uploadURL = await getSignedUrl(s3Client, command, { expiresIn: 60 });
     res.send({ uploadURL, key });
-  } catch {
+  } catch (error) {
+    console.error("Failed to generate presigned URL:", error);
     res.status(500).json({ error: "Failed to generate upload URL" });
   }
 });
@@ -77,7 +80,8 @@ app.delete("/delete-image", async (req, res) => {
     await s3.deleteObject({ Bucket: BUCKET, Key: s3Key }).promise();
     await db.collection("images").doc(docId).delete();
     res.status(200).json({ message: "Image deleted successfully" });
-  } catch {
+  } catch (err) {
+    console.error("Failed to delete:", err);
     res.status(500).json({ error: "Failed to delete image" });
   }
 });
@@ -88,4 +92,6 @@ app.use("/download-multiple-groups", downloadMultipleGroupsRoute);
 
 // Start the server
 const PORT = process.env.PORT || 4000;
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

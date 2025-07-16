@@ -9,39 +9,14 @@ import { onAuthStateChanged } from "firebase/auth";
 const OPTIONS = {
   productLines: ["Enviroshake", "Enviroshingle", "EnviroSlate"],
   roofTags: [
-    "Gable",
-    "Gambrel",
-    "Hip",
-    "Mansard",
-    "Siding",
-    "Dormer",
-    "Eyebrow",
-    "Flared Rake",
-    "Rake Metal",
-    "Skylight",
-    "Snow Guards",
-    "Solar Panels",
-    "Staggered Coursing",
-    "Steeple",
-    "Straight Coursing",
-    "Turret",
-    "valleys",
+    "Gable", "Gambrel", "Hip", "Mansard", "Siding", "Dormer", "Eyebrow", "Flared Rake",
+    "Rake Metal", "Skylight", "Snow Guards", "Solar Panels", "Staggered Coursing",
+    "Steeple", "Straight Coursing", "Turret", "valleys"
   ],
   projectTypes: [
-    "Barn",
-    "Clubhouse",
-    "Commercial",
-    "Education",
-    "Gazebo",
-    "Historic",
-    "HOA",
-    "Hospitality",
-    "Multifamily",
-    "National Monument",
-    "National Register of Historic Sites",
-    "Religious",
-    "Residential",
-    "Retail",
+    "Barn", "Clubhouse", "Commercial", "Education", "Gazebo", "Historic", "HOA",
+    "Hospitality", "Multifamily", "National Monument", "National Register of Historic Sites",
+    "Religious", "Residential", "Retail"
   ],
   countries: ["Canada", "USA", "Caribbean", "Other"],
 };
@@ -120,15 +95,15 @@ export default function UploadPage() {
       selectedColors.length === 0 ||
       !projectName
     ) {
-      alert(
-        "Please select at least one image, product line, one color, and project name.",
-      );
+      alert("Please select at least one image, product line, one color, and project name.");
       return;
     }
+
     if (!userEmail) {
       alert("You must be logged in to upload.");
       return;
     }
+
     setUploading(true);
 
     try {
@@ -154,6 +129,9 @@ export default function UploadPage() {
         const imgNum = (i + 1).toString().padStart(3, "0");
         const generatedName = `${groupId}_${imgNum}`;
 
+        // 👇 Debug: Check file type
+        console.log("Uploading:", file.name, "| type:", file.type);
+
         const res = await fetch("http://localhost:4000/generate-upload-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -169,13 +147,14 @@ export default function UploadPage() {
           headers: { "Content-Type": file.type },
           body: file,
         });
+
         console.log("Upload response status:", uploadRes.status);
+
         if (!uploadRes.ok) {
           console.log(await uploadRes.text());
           throw new Error("Failed to upload image");
         }
 
-        // Save image record
         await addDoc(collection(db, "images"), {
           groupId,
           groupName: groupId,
@@ -192,12 +171,11 @@ export default function UploadPage() {
           uploadedBy: userEmail,
           timestamp: serverTimestamp(),
         });
+
         uploaded++;
       }
 
-      setMessage(
-        `✅ ${uploaded} image${uploaded > 1 ? "s" : ""} uploaded and saved!`,
-      );
+      setMessage(`✅ ${uploaded} image${uploaded > 1 ? "s" : ""} uploaded and saved!`);
       setSelectedColors([]);
       setProductLine(null);
       setRoofTags([]);

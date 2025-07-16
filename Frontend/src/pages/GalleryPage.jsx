@@ -1014,7 +1014,7 @@ export default function GalleryPage() {
                   }}
                 >
                   +
-                </div>
+               </div>
               )}
             </div>
             <div className="modal-action-row">
@@ -1093,54 +1093,66 @@ export default function GalleryPage() {
             >
               <FaTrashAlt />
             </span>
-            <div className="modal-action-row">
-              {modalImage.groupImages?.length === 1 && (
-                <div
-                  className="modal-add-btn"
-                  title="Add Photo"
+            {modalImage.groupImages?.length === 1 ? (
+              <div
+                className="modal-action-row"
+                style={{ justifyContent: "center", gap: "1rem" }}
+              >
+                <button
                   onClick={openAddPhotoDialog}
                   style={{
+                    border: "1px solid #09713c",
+                    color: "#09713c",
+                    background: "white",
+                    padding: "0.5rem 1.2rem",
+                    borderRadius: "8px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
                     opacity: addingPhotos ? 0.6 : 1,
                     pointerEvents: addingPhotos ? "none" : "auto",
                   }}
                 >
-                  +
-                </div>
-              )}
-              <button
-                onClick={() =>
-                  modalImage.groupId
-                    ? handleDownloadGroup(modalImage.groupId)
-                    : handleDownload(
-                        modalImage.groupImages?.[modalIndex] ?? modalImage,
-                      )
-                }
-                disabled={
-                  modalImage.groupId
-                    ? false
-                    : !(
-                        (modalImage.groupImages?.[modalIndex]?.s3Key ||
+                  <span style={{ fontSize: "1.2rem" }}>+</span> Add More Photos
+                </button>
+
+                <button
+                  onClick={() =>
+                    modalImage.groupId
+                      ? handleDownloadGroup(modalImage.groupId)
+                      : handleDownload(
+                          modalImage.groupImages?.[modalIndex] ?? modalImage
+                        )
+                  }
+                  disabled={
+                    modalImage.groupId
+                      ? false
+                      : !(
+                          modalImage.groupImages?.[modalIndex]?.s3Key ||
                           modalImage.groupImages?.[modalIndex]?.s3Url ||
                           modalImage.s3Key ||
-                          modalImage.s3Url)
-                      )
-                }
-                className="modal-download-btn"
-              >
-                <FaDownload />
-                <span>Download Image</span>
-              </button>
-              {/* NOTES POPUP BUTTON */}
-              <button
-                onClick={handleOpenNotesPopup}
-                className="modal-notes-btn"
-                style={{ background: showNotesPopup ? "#e8f7e4" : undefined }}
-                title="View/Edit Notes"
-              >
-                <StickyNote size={21} />
-                <span>Notes</span>
-              </button>
-            </div>
+                          modalImage.s3Url
+                        )
+                  }
+                  className="modal-download-btn"
+                >
+                  <FaDownload />
+                  <span>Download Image</span>
+                </button>
+
+                <button
+                  onClick={handleOpenNotesPopup}
+                  className="modal-notes-btn"
+                  style={{ background: showNotesPopup ? "#e8f7e4" : undefined }}
+                  title="View/Edit Notes"
+                >
+                  <StickyNote size={21} />
+                  <span>Notes</span>
+                </button>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </Modal>
@@ -1280,6 +1292,7 @@ export default function GalleryPage() {
             </>
           )}
         </div>
+
       </Modal>
       <Modal
         open={deleteModalOpen}
