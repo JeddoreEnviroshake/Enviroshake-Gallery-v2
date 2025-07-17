@@ -140,6 +140,7 @@ export default function GalleryPage() {
   const [modalImage, setModalImage] = useState(null);
   const [modalIndex, setModalIndex] = useState(0);
   const [mainSwiper, setMainSwiper] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -215,6 +216,14 @@ export default function GalleryPage() {
       addInputRef.current.value = "";
     }
   }, [modalOpen]);
+
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, []);
 
   const handleOpenNotesPopup = () => {
     let img =
@@ -604,6 +613,15 @@ export default function GalleryPage() {
           border-radius: 8px;
           z-index: 2000;
           font-weight: bold;
+        }
+        .fullscreen-active {
+          position: fixed !important;
+          top: 0;
+          left: 0;
+          width: 100vw !important;
+          height: 100vh !important;
+          z-index: 1999;
+          background: rgba(0, 0, 0, 0.95);
         }
       `}</style>
       <input
@@ -1026,12 +1044,17 @@ export default function GalleryPage() {
                     <img
                       src={`${BUCKET_URL}/${img.s3Key}`}
                       alt=""
-                      className="modal-main-image"
+                      className={`modal-main-image ${isFullscreen ? "fullscreen-active" : ""}`}
                       style={{
-                        maxWidth: "100%",
-                        borderRadius: "10px",
+                        maxWidth: isFullscreen ? "100vw" : "100%",
+                        maxHeight: isFullscreen ? "100vh" : "70vh",
+                        objectFit: "contain",
                         display: "block",
+                        borderRadius: isFullscreen ? "0" : "10px",
+                        margin: "0 auto",
+                        cursor: "zoom-in",
                       }}
+                      onDoubleClick={() => setIsFullscreen(true)}
                     />
                     <span
                       className="delete-icon"
@@ -1045,6 +1068,70 @@ export default function GalleryPage() {
                 </SwiperSlide>
               ))}
             </Swiper>
+            {isFullscreen && (
+              <>
+                <button
+                  onClick={() => setIsFullscreen(false)}
+                  style={{
+                    position: "fixed",
+                    top: "20px",
+                    right: "30px",
+                    fontSize: "2rem",
+                    background: "none",
+                    border: "none",
+                    color: "white",
+                    zIndex: 2000,
+                    cursor: "pointer",
+                  }}
+                >
+                  ×
+                </button>
+
+                <button
+                  onClick={() => {
+                    const nextIndex = (modalIndex + 1) % modalImage.groupImages.length;
+                    setModalIndex(nextIndex);
+                    if (mainSwiper) mainSwiper.slideTo(nextIndex);
+                  }}
+                  style={{
+                    position: "fixed",
+                    top: "50%",
+                    right: "20px",
+                    fontSize: "2rem",
+                    background: "none",
+                    border: "none",
+                    color: "white",
+                    zIndex: 2000,
+                    cursor: "pointer",
+                    transform: "translateY(-50%)",
+                  }}
+                >
+                  ›
+                </button>
+
+                <button
+                  onClick={() => {
+                    const prevIndex = (modalIndex - 1 + modalImage.groupImages.length) % modalImage.groupImages.length;
+                    setModalIndex(prevIndex);
+                    if (mainSwiper) mainSwiper.slideTo(prevIndex);
+                  }}
+                  style={{
+                    position: "fixed",
+                    top: "50%",
+                    left: "20px",
+                    fontSize: "2rem",
+                    background: "none",
+                    border: "none",
+                    color: "white",
+                    zIndex: 2000,
+                    cursor: "pointer",
+                    transform: "translateY(-50%)",
+                  }}
+                >
+                  ‹
+                </button>
+              </>
+            )}
             <div className="thumbnail-row">
               {modalImage.groupImages.map((img, idx) => (
                 <img
