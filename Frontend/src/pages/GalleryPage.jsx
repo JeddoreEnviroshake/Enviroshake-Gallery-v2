@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import {
   collection,
@@ -522,6 +523,12 @@ export default function GalleryPage() {
     setModalOpen(true);
   };
 
+  const handleImageDoubleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsFullscreen(true);
+  };
+
   const renderFullscreen = () => {
     if (!isFullscreen || !modalImage) return null;
     const isGroup =
@@ -532,7 +539,7 @@ export default function GalleryPage() {
     const src = activeImg.s3Key
       ? `${BUCKET_URL}/${activeImg.s3Key}`
       : activeImg.url;
-    return (
+    const overlay = (
       <div className="fullscreen-overlay">
         <img
           src={src}
@@ -602,11 +609,12 @@ export default function GalleryPage() {
               }}
             >
               ‹
-            </button>
-          </>
-        )}
+          </button>
+        </>
+      )}
       </div>
     );
+    return createPortal(overlay, document.body);
   };
 
   // EDIT MODAL
@@ -1157,7 +1165,7 @@ export default function GalleryPage() {
                         margin: "0 auto",
                         cursor: "zoom-in",
                       }}
-                      onDoubleClick={() => setIsFullscreen(true)}
+                      onDoubleClick={handleImageDoubleClick}
                     />
                     <span
                       className="delete-icon"
@@ -1263,7 +1271,7 @@ export default function GalleryPage() {
                   margin: "0 auto",
                   cursor: "zoom-in",
                 }}
-                onDoubleClick={() => setIsFullscreen(true)}
+                onDoubleClick={handleImageDoubleClick}
               />
               <span
                 className="delete-icon"
