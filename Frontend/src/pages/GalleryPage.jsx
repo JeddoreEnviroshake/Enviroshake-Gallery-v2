@@ -522,6 +522,93 @@ export default function GalleryPage() {
     setModalOpen(true);
   };
 
+  const renderFullscreen = () => {
+    if (!isFullscreen || !modalImage) return null;
+    const isGroup =
+      modalImage.groupImages && modalImage.groupImages.length > 1;
+    const activeImg = isGroup
+      ? modalImage.groupImages[modalIndex]
+      : modalImage;
+    const src = activeImg.s3Key
+      ? `${BUCKET_URL}/${activeImg.s3Key}`
+      : activeImg.url;
+    return (
+      <div className="fullscreen-overlay">
+        <img
+          src={src}
+          alt=""
+          className="fullscreen-active"
+          onDoubleClick={() => setIsFullscreen(false)}
+        />
+        <button
+          onClick={() => setIsFullscreen(false)}
+          style={{
+            position: "fixed",
+            top: "20px",
+            right: "30px",
+            fontSize: "2rem",
+            background: "none",
+            border: "none",
+            color: "white",
+            zIndex: 10000,
+            cursor: "pointer",
+          }}
+        >
+          ×
+        </button>
+        {isGroup && (
+          <>
+            <button
+              onClick={() => {
+                const nextIndex =
+                  (modalIndex + 1) % modalImage.groupImages.length;
+                setModalIndex(nextIndex);
+                if (mainSwiper) mainSwiper.slideTo(nextIndex);
+              }}
+              style={{
+                position: "fixed",
+                top: "50%",
+                right: "20px",
+                fontSize: "2rem",
+                background: "none",
+                border: "none",
+                color: "white",
+                zIndex: 10000,
+                cursor: "pointer",
+                transform: "translateY(-50%)",
+              }}
+            >
+              ›
+            </button>
+            <button
+              onClick={() => {
+                const prevIndex =
+                  (modalIndex - 1 + modalImage.groupImages.length) %
+                  modalImage.groupImages.length;
+                setModalIndex(prevIndex);
+                if (mainSwiper) mainSwiper.slideTo(prevIndex);
+              }}
+              style={{
+                position: "fixed",
+                top: "50%",
+                left: "20px",
+                fontSize: "2rem",
+                background: "none",
+                border: "none",
+                color: "white",
+                zIndex: 10000,
+                cursor: "pointer",
+                transform: "translateY(-50%)",
+              }}
+            >
+              ‹
+            </button>
+          </>
+        )}
+      </div>
+    );
+  };
+
   // EDIT MODAL
   const openEditModal = ({ groupId, isGroup, groupMeta, firstImage }) => {
     let source = isGroup ? groupMeta : firstImage;
@@ -1010,9 +1097,11 @@ export default function GalleryPage() {
           },
         }}
       >
-        {modalImage &&
-        modalImage.groupImages &&
-        modalImage.groupImages.length > 1 ? (
+        {isFullscreen
+          ? renderFullscreen()
+          : modalImage &&
+            modalImage.groupImages &&
+            modalImage.groupImages.length > 1 ? (
           <div
             style={{
               textAlign: "center",
@@ -1040,12 +1129,11 @@ export default function GalleryPage() {
             </div>
             <Swiper
               modules={[Navigation]}
-              navigation={!isFullscreen}
+              navigation
               onSwiper={setMainSwiper}
               initialSlide={modalIndex}
               onSlideChange={(swiper) => setModalIndex(swiper.activeIndex)}
               style={{ width: "100%", height: "380px", marginBottom: 16 }}
-              className={isFullscreen ? "fullscreen-swiper" : undefined}
             >
               {modalImage.groupImages.map((img) => (
                 <SwiperSlide key={img.id}>
@@ -1083,74 +1171,6 @@ export default function GalleryPage() {
                 </SwiperSlide>
               ))}
             </Swiper>
-            {isFullscreen && (
-              <div className="fullscreen-overlay">
-                <img
-                  src={`${BUCKET_URL}/${modalImage.groupImages[modalIndex].s3Key}`}
-                  alt=""
-                  className="fullscreen-active"
-                  onDoubleClick={() => setIsFullscreen(false)}
-                />
-                <button
-                  onClick={() => setIsFullscreen(false)}
-                  style={{
-                    position: "fixed",
-                    top: "20px",
-                    right: "30px",
-                    fontSize: "2rem",
-                    background: "none",
-                    border: "none",
-                    color: "white",
-                    zIndex: 10000,
-                    cursor: "pointer",
-                  }}
-                >
-                  ×
-                </button>
-                <button
-                  onClick={() => {
-                    const nextIndex = (modalIndex + 1) % modalImage.groupImages.length;
-                    setModalIndex(nextIndex);
-                    if (mainSwiper) mainSwiper.slideTo(nextIndex);
-                  }}
-                  style={{
-                    position: "fixed",
-                    top: "50%",
-                    right: "20px",
-                    fontSize: "2rem",
-                    background: "none",
-                    border: "none",
-                    color: "white",
-                    zIndex: 10000,
-                    cursor: "pointer",
-                    transform: "translateY(-50%)",
-                  }}
-                >
-                  ›
-                </button>
-                <button
-                  onClick={() => {
-                    const prevIndex = (modalIndex - 1 + modalImage.groupImages.length) % modalImage.groupImages.length;
-                    setModalIndex(prevIndex);
-                    if (mainSwiper) mainSwiper.slideTo(prevIndex);
-                  }}
-                  style={{
-                    position: "fixed",
-                    top: "50%",
-                    left: "20px",
-                    fontSize: "2rem",
-                    background: "none",
-                    border: "none",
-                    color: "white",
-                    zIndex: 10000,
-                    cursor: "pointer",
-                    transform: "translateY(-50%)",
-                  }}
-                >
-                  ‹
-                </button>
-              </div>
-            )}
             <div className="thumbnail-row">
               {modalImage.groupImages.map((img, idx) => (
                 <img
@@ -1215,37 +1235,11 @@ export default function GalleryPage() {
             </div>
           </div>
         ) : modalImage ? (
-          isFullscreen ? (
-            <div className="fullscreen-overlay">
-              <img
-                src={modalImage.url}
-                alt=""
-                className="fullscreen-active"
-                onDoubleClick={() => setIsFullscreen(false)}
-              />
-              <button
-                onClick={() => setIsFullscreen(false)}
-                style={{
-                  position: "fixed",
-                  top: "20px",
-                  right: "30px",
-                  fontSize: "2rem",
-                  color: "white",
-                  background: "none",
-                  border: "none",
-                  zIndex: 10000,
-                  cursor: "pointer",
-                }}
-              >
-                ×
-              </button>
-            </div>
-          ) : (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "2rem 2rem 0 2rem",
-                maxWidth: 780,
+          <div
+            style={{
+              textAlign: "center",
+              padding: "2rem 2rem 0 2rem",
+              maxWidth: 780,
               }}
             >
               <div>
@@ -1343,7 +1337,6 @@ export default function GalleryPage() {
                 </button>
               </div>
             </div>
-          )
         ) : null}
 
         </Modal>
