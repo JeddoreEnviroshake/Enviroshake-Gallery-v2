@@ -4,6 +4,14 @@ const express = require("express");
 const archiver = require("archiver");
 const admin = require("firebase-admin");
 const AWS = require("aws-sdk");
+require("dotenv").config(); // ✅ Load .env variables
+
+// ✅ Configure AWS SDK with credentials from .env
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+});
 
 const router = express.Router();
 const s3 = new AWS.S3();
@@ -42,9 +50,7 @@ router.post("/", async (req, res) => {
       for (const doc of imageDocs.docs) {
         const { s3Key } = doc.data();
 
-        if (!s3Key) {
-          continue;
-        }
+        if (!s3Key) continue;
 
         const extension = s3Key.endsWith(".png") ? ".png" : ".jpg";
         const fileName = `${safeName}_${String(i).padStart(3, "0")}${extension}`;

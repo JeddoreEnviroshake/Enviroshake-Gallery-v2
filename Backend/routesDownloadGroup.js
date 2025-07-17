@@ -2,6 +2,7 @@ const express = require("express");
 const AWS = require("aws-sdk");
 const archiver = require("archiver");
 const admin = require("firebase-admin");
+require("dotenv").config(); // ✅ Load environment variables from .env
 
 const db = admin.firestore();
 const router = express.Router();

@@ -22,8 +22,10 @@ const db = getFirestore();
 // AWS S3 setup for downloads and deletes (AWS SDK v2)
 const s3 = new AWS.S3({
   region: process.env.AWS_REGION,
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
   signatureVersion: "v4",
 });
 
