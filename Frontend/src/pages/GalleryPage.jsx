@@ -1233,22 +1233,20 @@ export default function GalleryPage() {
             <img
               src={modalImage.url}
               alt=""
-              className="modal-main-image"
+              className={`modal-main-image ${isFullscreen ? "fullscreen-active" : ""}`}
               style={{
-                maxWidth: "100%",
-                borderRadius: "10px",
+                maxWidth: isFullscreen ? "100vw" : "100%",
+                maxHeight: isFullscreen ? "100vh" : "70vh",
+                objectFit: "contain",
                 display: "block",
+                borderRadius: isFullscreen ? "0" : "10px",
+                margin: "0 auto",
+                cursor: "zoom-in",
               }}
               onDoubleClick={() => setIsFullscreen(true)}
             />
             {isFullscreen && (
-              <div className="fullscreen-overlay">
-                <img
-                  src={modalImage.url}
-                  alt=""
-                  className="fullscreen-active"
-                  onDoubleClick={() => setIsFullscreen(false)}
-                />
+              <>
                 <button
                   onClick={() => setIsFullscreen(false)}
                   style={{
@@ -1259,13 +1257,13 @@ export default function GalleryPage() {
                     background: "none",
                     border: "none",
                     color: "white",
-                    zIndex: 10000,
+                    zIndex: 2000,
                     cursor: "pointer",
                   }}
                 >
                   ×
                 </button>
-              </div>
+              </>
             )}
             <span
               className="delete-icon"
