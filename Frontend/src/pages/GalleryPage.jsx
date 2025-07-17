@@ -994,7 +994,10 @@ export default function GalleryPage() {
 
       {/* ====== MODALS ====== */}
       <Modal
-        open={modalOpen}
+        open={
+          modalOpen &&
+          !(isFullscreen && modalImage && !modalImage.groupImages)
+        }
         onClose={() => {
           setIsFullscreen(false);
           setModalOpen(false);
@@ -1230,33 +1233,7 @@ export default function GalleryPage() {
                 )}
               </div>
             </div>
-            {isFullscreen ? (
-              <div className="fullscreen-overlay">
-                <img
-                  src={modalImage.url}
-                  alt=""
-                  className="fullscreen-active"
-                  onDoubleClick={() => setIsFullscreen(false)}
-                />
-                <button
-                  onClick={() => setIsFullscreen(false)}
-                  style={{
-                    position: "fixed",
-                    top: "20px",
-                    right: "30px",
-                    fontSize: "2rem",
-                    background: "none",
-                    border: "none",
-                    color: "white",
-                    zIndex: 9999,
-                    cursor: "pointer",
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            ) : (
-              <>
+            <>
                 <img
                   src={modalImage.url}
                   alt=""
@@ -1335,21 +1312,48 @@ export default function GalleryPage() {
                 <span>Download Image</span>
               </button>
 
-              <button
-                onClick={handleOpenNotesPopup}
-                className="modal-notes-btn"
-                style={{ background: showNotesPopup ? "#e8f7e4" : undefined }}
-                title="View/Edit Notes"
-              >
-                <StickyNote size={21} />
-                <span>Notes</span>
-              </button>
-            </div>
-              </>
-            )}
+                <button
+                  onClick={handleOpenNotesPopup}
+                  className="modal-notes-btn"
+                  style={{ background: showNotesPopup ? "#e8f7e4" : undefined }}
+                  title="View/Edit Notes"
+                >
+                  <StickyNote size={21} />
+                  <span>Notes</span>
+                </button>
+              </div>
+            </>
           </div>
         ) : null}
-      </Modal>
+
+        </Modal>
+
+        {isFullscreen && modalImage && !modalImage.groupImages && (
+          <div className="fullscreen-overlay">
+            <img
+              src={modalImage.url}
+              alt=""
+              className="fullscreen-active"
+              onDoubleClick={() => setIsFullscreen(false)}
+            />
+            <button
+              onClick={() => setIsFullscreen(false)}
+              style={{
+                position: "fixed",
+                top: "20px",
+                right: "30px",
+                fontSize: "2rem",
+                color: "white",
+                background: "none",
+                border: "none",
+                zIndex: 10000,
+                cursor: "pointer",
+              }}
+            >
+              ×
+            </button>
+          </div>
+        )}
 
       {/* --- NOTES POPUP MODAL --- */}
       <Modal
