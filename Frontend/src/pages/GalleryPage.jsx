@@ -994,10 +994,7 @@ export default function GalleryPage() {
 
       {/* ====== MODALS ====== */}
       <Modal
-        open={
-          modalOpen &&
-          !(isFullscreen && modalImage && !modalImage.groupImages)
-        }
+        open={modalOpen}
         onClose={() => {
           setIsFullscreen(false);
           setModalOpen(false);
@@ -1218,100 +1215,123 @@ export default function GalleryPage() {
             </div>
           </div>
         ) : modalImage ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "2rem 2rem 0 2rem",
-              maxWidth: 780,
-            }}
-          >
-            <div>
-              <div style={{ fontWeight: 700, fontSize: "1.2rem" }}>
-                {formatImageName(
-                  modalImage?.groupMeta?.groupName || modalImage?.groupId || "",
-                  0,
-                )}
-              </div>
-            </div>
-            <>
-                <img
-                  src={modalImage.url}
-                  alt=""
-                  className="modal-main-image"
-                  style={{
-                    maxWidth: "100%",
-                    maxHeight: "70vh",
-                    objectFit: "contain",
-                    display: "block",
-                    borderRadius: "10px",
-                    margin: "0 auto",
-                    cursor: "zoom-in",
-                  }}
-                  onDoubleClick={() => setIsFullscreen(true)}
-                />
-                <span
-                  className="delete-icon"
-                  title="Delete photo"
-                  style={{ right: 28, bottom: 20, zIndex: 100 }}
-                  onClick={() =>
-                    handleDeletePhoto(
-                      modalImage.groupImages
-                        ? modalImage.groupImages[modalIndex]
-                        : modalImage,
-                    )
-                  }
-                >
-                  <FaTrashAlt />
-                </span>
-
-                {/* Consolidated action row */}
-                <div className="modal-action-row">
+          isFullscreen ? (
+            <div className="fullscreen-overlay">
+              <img
+                src={modalImage.url}
+                alt=""
+                className="fullscreen-active"
+                onDoubleClick={() => setIsFullscreen(false)}
+              />
               <button
-                onClick={openAddPhotoDialog}
-                className="modal-upload-more-btn"
-                title="Add Photo"
+                onClick={() => setIsFullscreen(false)}
                 style={{
-                  border: "1px solid #09713c",
-                  color: "#09713c",
-                  background: "white",
-                  padding: "0.5rem 1.2rem",
-                  borderRadius: "8px",
-                  fontWeight: 600,
+                  position: "fixed",
+                  top: "20px",
+                  right: "30px",
+                  fontSize: "2rem",
+                  color: "white",
+                  background: "none",
+                  border: "none",
+                  zIndex: 10000,
                   cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  opacity: addingPhotos ? 0.6 : 1,
-                  pointerEvents: addingPhotos ? "none" : "auto",
                 }}
               >
-                <span style={{ fontSize: "1.2rem" }}>+</span> Add More Photos
+                ×
               </button>
-
-              <button
+            </div>
+          ) : (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "2rem 2rem 0 2rem",
+                maxWidth: 780,
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 700, fontSize: "1.2rem" }}>
+                  {formatImageName(
+                    modalImage?.groupMeta?.groupName || modalImage?.groupId || "",
+                    0,
+                  )}
+                </div>
+              </div>
+              <img
+                src={modalImage.url}
+                alt=""
+                className="modal-main-image"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "70vh",
+                  objectFit: "contain",
+                  display: "block",
+                  borderRadius: "10px",
+                  margin: "0 auto",
+                  cursor: "zoom-in",
+                }}
+                onDoubleClick={() => setIsFullscreen(true)}
+              />
+              <span
+                className="delete-icon"
+                title="Delete photo"
+                style={{ right: 28, bottom: 20, zIndex: 100 }}
                 onClick={() =>
-                  modalImage.groupId
-                    ? handleDownloadGroup(modalImage.groupId)
-                    : handleDownload(
-                        modalImage.groupImages?.[modalIndex] ?? modalImage,
-                      )
+                  handleDeletePhoto(
+                    modalImage.groupImages
+                      ? modalImage.groupImages[modalIndex]
+                      : modalImage,
+                  )
                 }
-                disabled={
-                  modalImage.groupId
-                    ? false
-                    : !(
-                        modalImage.groupImages?.[modalIndex]?.s3Key ||
-                        modalImage.groupImages?.[modalIndex]?.s3Url ||
-                        modalImage.s3Key ||
-                        modalImage.s3Url
-                      )
-                }
-                className="modal-download-btn"
               >
-                <FaDownload />
-                <span>Download Image</span>
-              </button>
+                <FaTrashAlt />
+              </span>
 
+              {/* Consolidated action row */}
+              <div className="modal-action-row">
+                <button
+                  onClick={openAddPhotoDialog}
+                  className="modal-upload-more-btn"
+                  title="Add Photo"
+                  style={{
+                    border: "1px solid #09713c",
+                    color: "#09713c",
+                    background: "white",
+                    padding: "0.5rem 1.2rem",
+                    borderRadius: "8px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    opacity: addingPhotos ? 0.6 : 1,
+                    pointerEvents: addingPhotos ? "none" : "auto",
+                  }}
+                >
+                  <span style={{ fontSize: "1.2rem" }}>+</span> Add More Photos
+                </button>
+                <button
+                  onClick={() =>
+                    modalImage.groupId
+                      ? handleDownloadGroup(modalImage.groupId)
+                      : handleDownload(
+                          modalImage.groupImages?.[modalIndex] ?? modalImage,
+                        )
+                  }
+                  disabled={
+                    modalImage.groupId
+                      ? false
+                      : !(
+                          modalImage.groupImages?.[modalIndex]?.s3Key ||
+                          modalImage.groupImages?.[modalIndex]?.s3Url ||
+                          modalImage.s3Key ||
+                          modalImage.s3Url
+                        )
+                  }
+                  className="modal-download-btn"
+                >
+                  <FaDownload />
+                  <span>Download Image</span>
+                </button>
                 <button
                   onClick={handleOpenNotesPopup}
                   className="modal-notes-btn"
@@ -1322,38 +1342,11 @@ export default function GalleryPage() {
                   <span>Notes</span>
                 </button>
               </div>
-            </>
-          </div>
+            </div>
+          )
         ) : null}
 
         </Modal>
-
-        {isFullscreen && modalImage && !modalImage.groupImages && (
-          <div className="fullscreen-overlay">
-            <img
-              src={modalImage.url}
-              alt=""
-              className="fullscreen-active"
-              onDoubleClick={() => setIsFullscreen(false)}
-            />
-            <button
-              onClick={() => setIsFullscreen(false)}
-              style={{
-                position: "fixed",
-                top: "20px",
-                right: "30px",
-                fontSize: "2rem",
-                color: "white",
-                background: "none",
-                border: "none",
-                zIndex: 10000,
-                cursor: "pointer",
-              }}
-            >
-              ×
-            </button>
-          </div>
-        )}
 
       {/* --- NOTES POPUP MODAL --- */}
       <Modal
