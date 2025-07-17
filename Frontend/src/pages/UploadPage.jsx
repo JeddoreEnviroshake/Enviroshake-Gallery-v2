@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Select from "react-select";
+import CreatableSelect from "react-select/creatable";
 import { COLOR_OPTIONS } from "../Constants/colorOptions";
 import { db, auth } from "../services/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
@@ -414,7 +415,7 @@ export default function UploadPage() {
             <label style={{ fontWeight: 600 }}>
               Color Tags:<span style={{ color: "#e42" }}>*</span>
             </label>
-            <Select
+            <CreatableSelect
               isMulti
               placeholder="Choose colors..."
               options={COLOR_OPTIONS.map((color) => ({
@@ -432,7 +433,7 @@ export default function UploadPage() {
               Roof Tags:{" "}
               <span style={{ color: "#999", fontWeight: 400 }}>(optional)</span>
             </label>
-            <Select
+            <CreatableSelect
               isMulti
               placeholder="Select roof features..."
               options={OPTIONS.roofTags.map((t) => ({ label: t, value: t }))}
@@ -446,7 +447,7 @@ export default function UploadPage() {
               Project Tags:{" "}
               <span style={{ color: "#999", fontWeight: 400 }}>(optional)</span>
             </label>
-            <Select
+            <CreatableSelect
               isMulti
               placeholder="Select project types..."
               options={OPTIONS.projectTypes.map((t) => ({
@@ -463,7 +464,7 @@ export default function UploadPage() {
               Country Tags:{" "}
               <span style={{ color: "#999", fontWeight: 400 }}>(optional)</span>
             </label>
-            <Select
+            <CreatableSelect
               isMulti
               placeholder="Select countries..."
               options={OPTIONS.countries.map((c) => ({ label: c, value: c }))}
