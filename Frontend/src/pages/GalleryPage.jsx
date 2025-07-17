@@ -1256,40 +1256,39 @@ export default function GalleryPage() {
                 </button>
               </div>
             ) : (
-              <img
-                src={modalImage.url}
-                alt=""
-                className="modal-main-image"
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "70vh",
-                  objectFit: "contain",
-                  display: "block",
-                  borderRadius: "10px",
-                  margin: "0 auto",
-                  cursor: "zoom-in",
-                }}
-                onDoubleClick={() => setIsFullscreen(true)}
-              />
-            )}
-            <span
-              className="delete-icon"
-              title="Delete photo"
-              style={{ right: 28, bottom: 20, zIndex: 100 }}
-              onClick={() =>
-                handleDeletePhoto(
-                  modalImage.groupImages
-                    ? modalImage.groupImages[modalIndex]
-                    : modalImage,
-                )
-              }
-            >
-              <FaTrashAlt />
-            </span>
+              <>
+                <img
+                  src={modalImage.url}
+                  alt=""
+                  className="modal-main-image"
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "70vh",
+                    objectFit: "contain",
+                    display: "block",
+                    borderRadius: "10px",
+                    margin: "0 auto",
+                    cursor: "zoom-in",
+                  }}
+                  onDoubleClick={() => setIsFullscreen(true)}
+                />
+                <span
+                  className="delete-icon"
+                  title="Delete photo"
+                  style={{ right: 28, bottom: 20, zIndex: 100 }}
+                  onClick={() =>
+                    handleDeletePhoto(
+                      modalImage.groupImages
+                        ? modalImage.groupImages[modalIndex]
+                        : modalImage,
+                    )
+                  }
+                >
+                  <FaTrashAlt />
+                </span>
 
-            {/* Consolidated action row */}
-            {!isFullscreen && (
-            <div className="modal-action-row">
+                {/* Consolidated action row */}
+                <div className="modal-action-row">
               <button
                 onClick={openAddPhotoDialog}
                 className="modal-upload-more-btn"
@@ -1346,6 +1345,7 @@ export default function GalleryPage() {
                 <span>Notes</span>
               </button>
             </div>
+              </>
             )}
           </div>
         ) : null}
