@@ -614,14 +614,25 @@ export default function GalleryPage() {
           z-index: 2000;
           font-weight: bold;
         }
-        .fullscreen-active {
-          position: fixed !important;
-          top: 0;
-          left: 0;
-          width: 100vw !important;
-          height: 100vh !important;
-          z-index: 1999;
+        .fullscreen-overlay {
+          position: fixed;
+          inset: 0;
           background: rgba(0, 0, 0, 0.95);
+          z-index: 9998;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .fullscreen-active {
+          max-width: 100vw;
+          max-height: 100vh;
+          object-fit: contain;
+          z-index: 9999;
+          display: block;
+        }
+        .fullscreen-swiper .swiper-button-next,
+        .fullscreen-swiper .swiper-button-prev {
+          display: none !important;
         }
       `}</style>
       <input
@@ -984,7 +995,10 @@ export default function GalleryPage() {
       {/* ====== MODALS ====== */}
       <Modal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setIsFullscreen(false);
+          setModalOpen(false);
+        }}
         center
         classNames={{ modal: "photo-modal" }}
         styles={{
@@ -1026,11 +1040,12 @@ export default function GalleryPage() {
             </div>
             <Swiper
               modules={[Navigation]}
-              navigation
+              navigation={!isFullscreen}
               onSwiper={setMainSwiper}
               initialSlide={modalIndex}
               onSlideChange={(swiper) => setModalIndex(swiper.activeIndex)}
               style={{ width: "100%", height: "380px", marginBottom: 16 }}
+              className={isFullscreen ? "fullscreen-swiper" : undefined}
             >
               {modalImage.groupImages.map((img) => (
                 <SwiperSlide key={img.id}>
@@ -1044,13 +1059,13 @@ export default function GalleryPage() {
                     <img
                       src={`${BUCKET_URL}/${img.s3Key}`}
                       alt=""
-                      className={`modal-main-image ${isFullscreen ? "fullscreen-active" : ""}`}
+                      className="modal-main-image"
                       style={{
-                        maxWidth: isFullscreen ? "100vw" : "100%",
-                        maxHeight: isFullscreen ? "100vh" : "70vh",
+                        maxWidth: "100%",
+                        maxHeight: "70vh",
                         objectFit: "contain",
                         display: "block",
-                        borderRadius: isFullscreen ? "0" : "10px",
+                        borderRadius: "10px",
                         margin: "0 auto",
                         cursor: "zoom-in",
                       }}
@@ -1069,7 +1084,13 @@ export default function GalleryPage() {
               ))}
             </Swiper>
             {isFullscreen && (
-              <>
+              <div className="fullscreen-overlay">
+                <img
+                  src={`${BUCKET_URL}/${modalImage.groupImages[modalIndex].s3Key}`}
+                  alt=""
+                  className="fullscreen-active"
+                  onDoubleClick={() => setIsFullscreen(false)}
+                />
                 <button
                   onClick={() => setIsFullscreen(false)}
                   style={{
@@ -1080,13 +1101,12 @@ export default function GalleryPage() {
                     background: "none",
                     border: "none",
                     color: "white",
-                    zIndex: 2000,
+                    zIndex: 10000,
                     cursor: "pointer",
                   }}
                 >
                   ×
                 </button>
-
                 <button
                   onClick={() => {
                     const nextIndex = (modalIndex + 1) % modalImage.groupImages.length;
@@ -1101,14 +1121,13 @@ export default function GalleryPage() {
                     background: "none",
                     border: "none",
                     color: "white",
-                    zIndex: 2000,
+                    zIndex: 10000,
                     cursor: "pointer",
                     transform: "translateY(-50%)",
                   }}
                 >
                   ›
                 </button>
-
                 <button
                   onClick={() => {
                     const prevIndex = (modalIndex - 1 + modalImage.groupImages.length) % modalImage.groupImages.length;
@@ -1123,14 +1142,14 @@ export default function GalleryPage() {
                     background: "none",
                     border: "none",
                     color: "white",
-                    zIndex: 2000,
+                    zIndex: 10000,
                     cursor: "pointer",
                     transform: "translateY(-50%)",
                   }}
                 >
                   ‹
                 </button>
-              </>
+              </div>
             )}
             <div className="thumbnail-row">
               {modalImage.groupImages.map((img, idx) => (
@@ -1220,7 +1239,34 @@ export default function GalleryPage() {
                 borderRadius: "10px",
                 display: "block",
               }}
+              onDoubleClick={() => setIsFullscreen(true)}
             />
+            {isFullscreen && (
+              <div className="fullscreen-overlay">
+                <img
+                  src={modalImage.url}
+                  alt=""
+                  className="fullscreen-active"
+                  onDoubleClick={() => setIsFullscreen(false)}
+                />
+                <button
+                  onClick={() => setIsFullscreen(false)}
+                  style={{
+                    position: "fixed",
+                    top: "20px",
+                    right: "30px",
+                    fontSize: "2rem",
+                    background: "none",
+                    border: "none",
+                    color: "white",
+                    zIndex: 10000,
+                    cursor: "pointer",
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            )}
             <span
               className="delete-icon"
               title="Delete photo"
