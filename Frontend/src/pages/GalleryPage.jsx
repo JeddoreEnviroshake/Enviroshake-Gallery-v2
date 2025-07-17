@@ -1230,23 +1230,14 @@ export default function GalleryPage() {
                 )}
               </div>
             </div>
-            <img
-              src={modalImage.url}
-              alt=""
-              className={`modal-main-image ${isFullscreen ? "fullscreen-active" : ""}`}
-              style={{
-                maxWidth: isFullscreen ? "100vw" : "100%",
-                maxHeight: isFullscreen ? "100vh" : "70vh",
-                objectFit: "contain",
-                display: "block",
-                borderRadius: isFullscreen ? "0" : "10px",
-                margin: "0 auto",
-                cursor: "zoom-in",
-              }}
-              onDoubleClick={() => setIsFullscreen(true)}
-            />
-            {isFullscreen && (
-              <>
+            {isFullscreen ? (
+              <div className="fullscreen-overlay">
+                <img
+                  src={modalImage.url}
+                  alt=""
+                  className="fullscreen-active"
+                  onDoubleClick={() => setIsFullscreen(false)}
+                />
                 <button
                   onClick={() => setIsFullscreen(false)}
                   style={{
@@ -1257,13 +1248,29 @@ export default function GalleryPage() {
                     background: "none",
                     border: "none",
                     color: "white",
-                    zIndex: 2000,
+                    zIndex: 9999,
                     cursor: "pointer",
                   }}
                 >
                   ×
                 </button>
-              </>
+              </div>
+            ) : (
+              <img
+                src={modalImage.url}
+                alt=""
+                className="modal-main-image"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "70vh",
+                  objectFit: "contain",
+                  display: "block",
+                  borderRadius: "10px",
+                  margin: "0 auto",
+                  cursor: "zoom-in",
+                }}
+                onDoubleClick={() => setIsFullscreen(true)}
+              />
             )}
             <span
               className="delete-icon"
@@ -1281,6 +1288,7 @@ export default function GalleryPage() {
             </span>
 
             {/* Consolidated action row */}
+            {!isFullscreen && (
             <div className="modal-action-row">
               <button
                 onClick={openAddPhotoDialog}
@@ -1338,6 +1346,7 @@ export default function GalleryPage() {
                 <span>Notes</span>
               </button>
             </div>
+            )}
           </div>
         ) : null}
       </Modal>
