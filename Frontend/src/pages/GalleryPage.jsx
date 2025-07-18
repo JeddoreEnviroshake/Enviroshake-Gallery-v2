@@ -1264,21 +1264,29 @@ export default function GalleryPage() {
                   )}
                 </div>
               </div>
-              <img
-                src={modalImage.url}
-                alt=""
-                className="modal-main-image"
+              <div
                 style={{
-                  maxWidth: "100%",
-                  maxHeight: "70vh",
-                  objectFit: "contain",
-                  display: "block",
-                  borderRadius: "10px",
-                  margin: "0 auto",
-                  cursor: "zoom-in",
+                  width: "100%",
+                  height: "380px",
+                  position: "relative",
+                  marginBottom: 16,
                 }}
-                onDoubleClick={handleImageDoubleClick}
-              />
+              >
+                <img
+                  src={modalImage.url}
+                  alt=""
+                  className="modal-main-image"
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                  }}
+                  onDoubleClick={handleImageDoubleClick}
+                />
+              </div>
               <span
                 className="delete-icon"
                 title="Delete photo"
