@@ -676,6 +676,18 @@ export default function GalleryPage() {
     );
   };
 
+  const unifiedModalStyles = {
+    modal: {
+      padding: 0,
+      background: "white",
+      borderRadius: "10px",
+      maxWidth: "950px",
+    },
+    overlay: {
+      background: "rgba(0,0,0,0.5)",
+    },
+  };
+
   // ==== RENDER ====
   return (
     <>
@@ -1096,14 +1108,7 @@ export default function GalleryPage() {
         }}
         center
         classNames={{ modal: "photo-modal" }}
-        styles={{
-          modal: {
-            padding: 0,
-            background: "white",
-            borderRadius: "10px",
-            maxWidth: "950px",
-          },
-        }}
+        styles={unifiedModalStyles}
       >
         {isFullscreen
           ? renderFullscreen()
