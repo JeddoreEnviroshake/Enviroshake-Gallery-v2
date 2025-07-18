@@ -682,6 +682,7 @@ export default function GalleryPage() {
       background: "white",
       borderRadius: "10px",
       maxWidth: "950px",
+      width: "950px",
     },
     overlay: {
       background: "rgba(0,0,0,0.5)",
