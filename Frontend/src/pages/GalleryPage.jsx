@@ -533,7 +533,7 @@ export default function GalleryPage() {
     setModalImage({
       ...modalData,
       groupId: activeImg.groupId,
-      groupMeta: { ...groupMeta, groupName: activeImg.groupName || "" },
+      groupMeta: { groupName: activeImg.groupName || "" },
     });
     setModalIndex(index);
     setModalOpen(true);
