@@ -530,7 +530,11 @@ export default function GalleryPage() {
       activeImg.s3Key ? `${BUCKET_URL}/${activeImg.s3Key}` : activeImg.url;
     const modalData = { url, groupId: activeGroupId, groupImages, groupMeta };
     console.log("modalImage", modalData);
-    setModalImage(modalData);
+    setModalImage({
+      ...modalData,
+      groupId: activeImg.groupId,
+      groupMeta: { ...groupMeta, groupName: activeImg.groupName || "" },
+    });
     setModalIndex(index);
     setModalOpen(true);
   };
