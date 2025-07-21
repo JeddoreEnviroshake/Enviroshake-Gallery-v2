@@ -1263,10 +1263,21 @@ export default function GalleryPage() {
         ) : modalImage ? (
           <div className="single-image-wrapper">
             {console.log("🟡 modalImage debug", modalImage)}
-            <div className="modal-title">
-              {modalImage?.groupMeta?.groupName ||
-                modalImage?.groupId ||
-                "Untitled Group"}
+            <div style={{ background: "#fff", paddingTop: "1rem" }}>
+              <div
+                className="modal-title"
+                style={{
+                  textAlign: "center",
+                  fontWeight: 700,
+                  fontSize: "1.2rem",
+                  color: "#000",
+                  marginBottom: "1rem",
+                }}
+              >
+                {modalImage?.groupMeta?.groupName ||
+                  modalImage?.groupId ||
+                  "Untitled Group"}
+              </div>
             </div>
             <div className="single-image-container">
               <img
