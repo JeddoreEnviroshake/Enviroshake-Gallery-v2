@@ -1252,6 +1252,7 @@ export default function GalleryPage() {
           </div>
         ) : modalImage ? (
           <div className="single-image-wrapper">
+            {console.log("🟡 modalImage debug", modalImage)}
             <div className="modal-title">
               {modalImage?.groupMeta?.groupName ||
                 modalImage?.groupId ||
