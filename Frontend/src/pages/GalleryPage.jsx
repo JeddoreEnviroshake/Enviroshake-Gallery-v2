@@ -1303,6 +1303,8 @@ export default function GalleryPage() {
                 <FaTrashAlt />
               </span>
 
+              <div className="thumbnail-row placeholder" />
+
               {/* Consolidated action row */}
               <div className="modal-action-row">
                 <button

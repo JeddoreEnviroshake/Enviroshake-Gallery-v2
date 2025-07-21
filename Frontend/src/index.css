@@ -327,6 +327,11 @@ button:focus-visible {
   background: #fff;
 }
 
+.thumbnail-row.placeholder {
+  min-height: 88px;
+  visibility: hidden;
+}
+
 /* Modal action buttons */
 .photo-modal .modal-action-row {
   display: flex;
