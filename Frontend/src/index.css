@@ -430,6 +430,13 @@ button:focus-visible {
   transform: scale(1.05);
 }
 
+/* Title styling for single-image folders */
+.photo-modal .modal-title {
+  text-align: center;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
 /* Centered layout for single-image folders */
 .photo-modal .single-image-wrapper {
   display: flex;
@@ -449,7 +456,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .photo-modal .single-image-actions {
@@ -458,4 +465,5 @@ button:focus-visible {
   width: 100%;
   margin-left: auto;
   margin-right: auto;
+  flex-wrap: nowrap;
 }

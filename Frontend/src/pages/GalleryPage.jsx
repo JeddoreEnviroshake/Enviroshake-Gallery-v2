@@ -1250,11 +1250,8 @@ export default function GalleryPage() {
           </div>
         ) : modalImage ? (
           <div className="single-image-wrapper">
-            <div style={{ fontWeight: 700, fontSize: "1.2rem", marginBottom: "0.5rem" }}>
-              {formatImageName(
-                modalImage?.groupMeta?.groupName || modalImage?.groupId || "",
-                0,
-              )}
+            <div className="modal-title">
+              {modalImage?.groupMeta?.groupName || modalImage?.groupId || ""}
             </div>
             <div className="single-image-container">
               <img
