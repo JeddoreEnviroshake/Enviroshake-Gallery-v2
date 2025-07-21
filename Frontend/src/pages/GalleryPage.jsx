@@ -1249,64 +1249,39 @@ export default function GalleryPage() {
             </div>
           </div>
         ) : modalImage ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "2rem 2rem 0 2rem",
-              maxWidth: 780,
-              }}
-            >
-              <div>
-                <div style={{ fontWeight: 700, fontSize: "1.2rem" }}>
-                  {formatImageName(
-                    modalImage?.groupMeta?.groupName || modalImage?.groupId || "",
-                    0,
-                  )}
-                </div>
-              </div>
-              <div
-                style={{
-                  width: "100%",
-                  height: "380px",
-                  position: "relative",
-                  marginBottom: 16,
-                }}
-              >
-                <img
-                  src={modalImage.url}
-                  alt=""
-                  className="modal-main-image"
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                    display: "block",
-                  }}
-                  onDoubleClick={handleImageDoubleClick}
-                />
-              </div>
+          <div className="single-image-wrapper">
+            <div style={{ fontWeight: 700, fontSize: "1.2rem", marginBottom: "0.5rem" }}>
+              {formatImageName(
+                modalImage?.groupMeta?.groupName || modalImage?.groupId || "",
+                0,
+              )}
+            </div>
+            <div className="single-image-container">
+              <img
+                src={modalImage.url}
+                alt=""
+                className="modal-main-image"
+                style={{ maxWidth: "100%", maxHeight: "70vh", objectFit: "contain" }}
+                onDoubleClick={handleImageDoubleClick}
+              />
               <span
                 className="delete-icon"
                 title="Delete photo"
                 style={{ right: 28, bottom: 20, zIndex: 100 }}
                 onClick={() =>
                   handleDeletePhoto(
-                    modalImage.groupImages
-                      ? modalImage.groupImages[modalIndex]
-                      : modalImage,
+                    modalImage.groupImages ? modalImage.groupImages[modalIndex] : modalImage,
                   )
                 }
               >
                 <FaTrashAlt />
               </span>
+            </div>
 
-              <div className="thumbnail-row placeholder" />
+            <div className="thumbnail-row placeholder" />
 
-              {/* Consolidated action row */}
-              <div className="modal-action-row">
+            {/* Consolidated action row */}
+            <div className="modal-action-row single-image-actions">
                 <button
                   onClick={openAddPhotoDialog}
                   className="modal-upload-more-btn"
@@ -1360,8 +1335,8 @@ export default function GalleryPage() {
                   <StickyNote size={21} />
                   <span>Notes</span>
                 </button>
-              </div>
             </div>
+          </div>
         ) : null}
 
         </Modal>
