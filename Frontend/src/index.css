@@ -434,6 +434,7 @@ button:focus-visible {
 .photo-modal .modal-title {
   text-align: center;
   font-weight: 700;
+  font-size: 1.2rem;
   margin-bottom: 1rem;
 }
 
