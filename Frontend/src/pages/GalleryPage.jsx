@@ -518,7 +518,9 @@ export default function GalleryPage() {
     const activeImg = groupImages[index] || {};
     const url =
       activeImg.s3Key ? `${BUCKET_URL}/${activeImg.s3Key}` : activeImg.url;
-    setModalImage({ url, groupId, groupImages, groupMeta });
+    const modalData = { url, groupId, groupImages, groupMeta };
+    console.log("modalImage", modalData);
+    setModalImage(modalData);
     setModalIndex(index);
     setModalOpen(true);
   };
@@ -1251,7 +1253,9 @@ export default function GalleryPage() {
         ) : modalImage ? (
           <div className="single-image-wrapper">
             <div className="modal-title">
-              {modalImage?.groupMeta?.groupName || modalImage?.groupId || ""}
+              {modalImage?.groupMeta?.groupName ||
+                modalImage?.groupId ||
+                "Untitled Group"}
             </div>
             <div className="single-image-container">
               <img
