@@ -514,11 +514,21 @@ export default function GalleryPage() {
 
   const handleImageClick = (groupId, index = 0) => {
     const groupImages = grouped[groupId] || [];
-    const groupMeta = groups[groupId];
     const activeImg = groupImages[index] || {};
+    let activeGroupId = groupId;
+    let groupMeta = groups[groupId];
+
+    // When the folder contains only a single image and there is no
+    // entry in the groups map, fall back to the image data so the
+    // modal can display the group name correctly.
+    if (!groupMeta && groupImages.length === 1 && activeImg.groupId) {
+      activeGroupId = activeImg.groupId;
+      groupMeta = { groupName: activeImg.groupName };
+    }
+
     const url =
       activeImg.s3Key ? `${BUCKET_URL}/${activeImg.s3Key}` : activeImg.url;
-    const modalData = { url, groupId, groupImages, groupMeta };
+    const modalData = { url, groupId: activeGroupId, groupImages, groupMeta };
     console.log("modalImage", modalData);
     setModalImage(modalData);
     setModalIndex(index);
