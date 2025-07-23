@@ -802,7 +802,7 @@ export default function GalleryPage() {
             style={{ display: "flex", alignItems: "center", height: "100%" }}
           >
             <img
-              src="/enviroshake-gallery/Enviroshake_logo/Enviroshake_white_logo.png"
+              src={`${import.meta.env.BASE_URL}Enviroshake_logo/Enviroshake_white_logo.png`}
               alt="Enviroshake Logo"
               style={{
                 maxHeight: "100%",
@@ -1216,7 +1216,7 @@ export default function GalleryPage() {
               ))}
               {modalImage.groupImages.length === 1 && (
                 <img
-                  src="/Enviroshake_logo/logo-enviroshake-square.jpg"
+                  src={`${import.meta.env.BASE_URL}Enviroshake_logo/logo-enviroshake-square.jpg`}
                   alt="Enviroshake Logo"
                   className="thumbnail"
                   style={{ cursor: "default" }}
