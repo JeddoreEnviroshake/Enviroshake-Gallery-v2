@@ -332,6 +332,26 @@ button:focus-visible {
   visibility: hidden;
 }
 
+/* Simple thumbnail strip styling */
+.thumbnail-strip {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.thumbnail-image {
+  width: 64px;
+  height: 64px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+  transition: box-shadow 0.2s;
+}
+
+.thumbnail-image:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
 /* Modal action buttons */
 .photo-modal .modal-action-row {
   display: flex;
