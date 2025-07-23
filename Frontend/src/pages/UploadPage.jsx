@@ -225,7 +225,7 @@ export default function UploadPage() {
             style={{ display: "flex", alignItems: "center", height: "100%" }}
           >
             <img
-              src="/enviroshake-gallery/Enviroshake_logo/Enviroshake_white_logo.png"
+              src={`${import.meta.env.BASE_URL}Enviroshake_logo/Enviroshake_white_logo.png`}
               alt="Enviroshake Logo"
               style={{
                 maxHeight: "100%",
