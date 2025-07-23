@@ -1,0 +1,17 @@
+export const COLOR_OPTIONS = [
+  "Aged Cedar",
+  "Silvered Cedar",
+  "Charcoal Grey",
+  "Plum Purple",
+  "Stone Grey",
+  "Onyx Black",
+  "Sage Green",
+  "Tropical Cool",
+  "Multi-Tone CS",
+  "Multi-Tone CSO",
+  "Multi-Tone SCPG",
+  "Multi-Tone SPG",
+  "Multi-Tone SP",
+  "Bermuda White",
+  "Terra Cotta",
+];
