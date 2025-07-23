@@ -1216,7 +1216,7 @@ export default function GalleryPage() {
               ))}
               {modalImage.groupImages.length === 1 && (
                 <img
-                  src="/enviroshake-logo.png"
+                  src="/Enviroshake_logo/logo-enviroshake-square.jpg"
                   alt="Enviroshake Logo"
                   className="thumbnail"
                   style={{ cursor: "default" }}
