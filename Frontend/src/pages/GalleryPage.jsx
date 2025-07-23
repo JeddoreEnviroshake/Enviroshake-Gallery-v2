@@ -1131,7 +1131,7 @@ export default function GalleryPage() {
           ? renderFullscreen()
           : modalImage &&
             modalImage.groupImages &&
-            modalImage.groupImages.length > 1 ? (
+            modalImage.groupImages.length ? (
           <div
             style={{
               textAlign: "center",
@@ -1159,7 +1159,7 @@ export default function GalleryPage() {
             </div>
             <Swiper
               modules={[Navigation]}
-              navigation
+              navigation={modalImage.groupImages.length > 1}
               onSwiper={setMainSwiper}
               initialSlide={modalIndex}
               onSlideChange={(swiper) => setModalIndex(swiper.activeIndex)}
@@ -1214,21 +1214,38 @@ export default function GalleryPage() {
                   }}
                 />
               ))}
-              {modalImage.groupImages.length > 1 && (
-                <div
-                  className="thumbnail add-thumb"
-                  title="Add Photo"
-                  onClick={openAddPhotoDialog}
-                  style={{
-                    opacity: addingPhotos ? 0.6 : 1,
-                    pointerEvents: addingPhotos ? "none" : "auto",
-                  }}
-                >
-                  +
-                </div>
+              {modalImage.groupImages.length === 1 && (
+                <img
+                  src="/enviroshake-logo.png"
+                  alt="Enviroshake Logo"
+                  className="thumbnail"
+                  style={{ cursor: "default" }}
+                />
               )}
+              <div
+                className="thumbnail add-thumb"
+                title="Add Photo"
+                onClick={openAddPhotoDialog}
+                style={{
+                  opacity: addingPhotos ? 0.6 : 1,
+                  pointerEvents: addingPhotos ? "none" : "auto",
+                }}
+              >
+                +
+              </div>
             </div>
             <div className="modal-action-row">
+              <button
+                onClick={openAddPhotoDialog}
+                className="modal-upload-more-btn"
+                title="Add Photo"
+                style={{
+                  opacity: addingPhotos ? 0.6 : 1,
+                  pointerEvents: addingPhotos ? "none" : "auto",
+                }}
+              >
+                <span style={{ fontSize: "1.2rem" }}>+</span> Add More Photos
+              </button>
               <button
                 onClick={() =>
                   modalImage.groupId
