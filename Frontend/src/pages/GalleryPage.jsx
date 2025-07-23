@@ -435,7 +435,9 @@ export default function GalleryPage() {
       const link = document.createElement("a");
       link.href = url;
       link.download = `${groupId}.zip`;
+      document.body.appendChild(link);
       link.click();
+      link.remove();
       window.URL.revokeObjectURL(url);
     } catch {
       alert("Failed to download ZIP");
