@@ -7,6 +7,8 @@ import { db, auth } from "../services/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
+const API_BASE = "http://localhost:4000";
+
 const OPTIONS = {
   productLines: ["Enviroshake", "Enviroshingle", "EnviroSlate"],
   roofTags: [
@@ -133,7 +135,7 @@ export default function UploadPage() {
         // 👇 Debug: Check file type
         console.log("Uploading:", file.name, "| type:", file.type);
 
-        const res = await fetch("http://localhost:4000/generate-upload-url", {
+        const res = await fetch(`${API_BASE}/generate-upload-url`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
