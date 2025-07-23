@@ -27,6 +27,7 @@ import { FaTrashAlt, FaLock, FaDownload } from "react-icons/fa";
 import { StickyNote } from "lucide-react";
 
 const BUCKET_URL = "https://enviroshake-gallery-images.s3.amazonaws.com";
+const API_BASE = "http://localhost:4000";
 
 const OPTIONS = {
   productLines: ["Enviroshake", "Enviroshingle", "EnviroSlate"],
@@ -291,7 +292,7 @@ export default function GalleryPage() {
         const baseName = groupMeta.groupName || groupId;
         const generatedName = `${baseName}_${imgNum}`;
 
-        const res = await fetch("http://localhost:4000/generate-upload-url", {
+        const res = await fetch(`${API_BASE}/generate-upload-url`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -426,7 +427,7 @@ export default function GalleryPage() {
   const handleDownloadGroup = async (groupId) => {
     try {
       const response = await fetch(
-        `http://localhost:4000/download-group/${groupId}`,
+        `${API_BASE}/download-group/${groupId}`,
       );
       if (!response.ok) throw new Error("Failed to fetch ZIP");
 
@@ -447,7 +448,7 @@ export default function GalleryPage() {
     setIsDownloading(true);
     try {
       const res = await fetch(
-        "http://localhost:4000/download-multiple-groups",
+        `${API_BASE}/download-multiple-groups`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
