@@ -52,52 +52,33 @@ router.get("/:groupId", async (req, res) => {
 
     const folderName = `${groupName}/`;
 
-    const streamPromises = snapshot.docs.map((doc, index) => {
+    snapshot.docs.forEach((doc, index) => {
       const { s3Key } = doc.data();
 
       if (!s3Key || s3Key.includes("firebasestorage.googleapis.com")) {
         console.log(`Skipping Firebase or invalid S3 key: ${s3Key}`);
-        return Promise.resolve();
+        return;
       }
 
       const idxStr = String(index + 1).padStart(3, "0");
       const fileName = `${groupName}_${idxStr}.jpg`;
       const filePath = `${folderName}${fileName}`;
 
-      return new Promise((resolve, reject) => {
-        console.log(`Adding to archive: ${filePath}`);
+      console.log(`Adding to archive: ${filePath}`);
 
-        const s3Stream = s3
-          .getObject({ Bucket: process.env.AWS_S3_BUCKET, Key: s3Key })
-          .createReadStream();
+      const s3Stream = s3
+        .getObject({ Bucket: process.env.AWS_S3_BUCKET, Key: s3Key })
+        .createReadStream();
 
-        s3Stream.on("error", (err) => {
-          console.error("S3 stream error:", err);
-          reject(err);
-        });
-
-        s3Stream.on("end", () => {
-          console.log("Finished streaming:", filePath);
-          resolve();
-        });
-
-        archive.append(s3Stream, { name: filePath });
+      s3Stream.on("error", (err) => {
+        console.error("S3 stream error:", err);
+        archive.emit("error", err);
       });
+
+      archive.append(s3Stream, { name: filePath });
     });
 
-    Promise.all(streamPromises)
-      .then(() => {
-        console.log("All streams finished. Finalizing archive...");
-        return archive.finalize();
-      })
-      .catch((err) => {
-        console.error("Streaming error:", err);
-        if (!res.headersSent) {
-          res.status(500).json({ message: "Failed to stream images." });
-        } else {
-          res.end();
-        }
-      });
+    archive.finalize();
   } catch (err) {
     console.error("Download error:", err);
     if (!res.headersSent) {
