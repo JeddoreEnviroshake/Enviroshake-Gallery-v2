@@ -25,9 +25,13 @@ import "swiper/css";
 import "swiper/css/navigation";
 import { FaTrashAlt, FaLock, FaDownload } from "react-icons/fa";
 import { StickyNote } from "lucide-react";
+import {
+  generateUploadUrl,
+  downloadGroup,
+  downloadMultipleGroups,
+} from "../services/api";
 
 const BUCKET_URL = "https://enviroshake-gallery-images.s3.amazonaws.com";
-const API_BASE = "http://localhost:4000";
 
 const OPTIONS = {
   productLines: ["Enviroshake", "Enviroshingle", "EnviroSlate"],
@@ -292,15 +296,10 @@ export default function GalleryPage() {
         const baseName = groupMeta.groupName || groupId;
         const generatedName = `${baseName}_${imgNum}`;
 
-        const res = await fetch(`${API_BASE}/generate-upload-url`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fileName: `${generatedName}${extension}`,
-            fileType: file.type || "image/jpeg",
-          }),
-        });
-        const { uploadURL, key } = await res.json();
+        const { uploadURL, key } = await generateUploadUrl(
+          `${generatedName}${extension}`,
+          file.type || "image/jpeg",
+        );
 
         console.log("Uploading to S3 →", {
           fileName: file.name,
@@ -426,12 +425,7 @@ export default function GalleryPage() {
 
   const handleDownloadGroup = async (groupId) => {
     try {
-      const response = await fetch(
-        `${API_BASE}/download-group/${groupId}`,
-      );
-      if (!response.ok) throw new Error("Failed to fetch ZIP");
-
-      const blob = await response.blob();
+      const blob = await downloadGroup(groupId);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -449,16 +443,7 @@ export default function GalleryPage() {
     if (!selectedCardIds.length || isDownloading) return;
     setIsDownloading(true);
     try {
-      const res = await fetch(
-        `${API_BASE}/download-multiple-groups`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ groupIds: selectedCardIds }),
-        },
-      );
-      if (!res.ok) throw new Error("Failed to generate ZIP");
-      const blob = await res.blob();
+      const blob = await downloadMultipleGroups(selectedCardIds);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
