@@ -6,8 +6,7 @@ import { COLOR_OPTIONS } from "../Constants/colorOptions";
 import { db, auth } from "../services/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-
-const API_BASE = "http://localhost:4000";
+import { generateUploadUrl } from "../services/api";
 
 const OPTIONS = {
   productLines: ["Enviroshake", "Enviroshingle", "EnviroSlate"],
@@ -135,15 +134,10 @@ export default function UploadPage() {
         // 👇 Debug: Check file type
         console.log("Uploading:", file.name, "| type:", file.type);
 
-        const res = await fetch(`${API_BASE}/generate-upload-url`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fileName: `${generatedName}${extension}`,
-            fileType: file.type,
-          }),
-        });
-        const { uploadURL, key } = await res.json();
+        const { uploadURL, key } = await generateUploadUrl(
+          `${generatedName}${extension}`,
+          file.type,
+        );
 
         const uploadRes = await fetch(uploadURL, {
           method: "PUT",
