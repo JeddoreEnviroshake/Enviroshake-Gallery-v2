@@ -2,8 +2,7 @@
 require("dotenv").config();
 
 const express = require("express");
-const AWS = require("aws-sdk");
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const cors = require("cors");
 const { admin, db } = require("./firebaseAdmin");
@@ -38,17 +37,7 @@ REQUIRED_ENV_VARS.forEach(name => {
   }
 });
 
-// ✅ AWS SDK v2 – for deletions and downloads
-const s3 = new AWS.S3({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-  signatureVersion: "v4",
-});
-
-// ✅ AWS SDK v3 – for uploads
+// ✅ AWS SDK v3 – for uploads and deletions
 const s3Client = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
@@ -95,7 +84,11 @@ app.delete("/delete-image", async (req, res) => {
   }
 
   try {
-    await s3.deleteObject({ Bucket: BUCKET, Key: s3Key }).promise();
+    const deleteCommand = new DeleteObjectCommand({
+      Bucket: BUCKET,
+      Key: s3Key,
+    });
+    await s3Client.send(deleteCommand);
     await db.collection("images").doc(docId).delete();
     res.status(200).json({ message: "Image deleted successfully" });
   } catch (err) {
