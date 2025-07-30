@@ -1,5 +1,5 @@
 const express = require("express");
-const AWS = require("aws-sdk");
+const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
 const archiver = require("archiver");
 const admin = require("firebase-admin");
 const { PassThrough } = require("stream");
@@ -8,7 +8,7 @@ require("dotenv").config();
 const db = admin.firestore();
 const router = express.Router();
 
-const s3 = new AWS.S3({
+const s3Client = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -64,9 +64,19 @@ router.get("/:groupId", async (req, res) => {
       const fileName = `${groupName}_${String(i + 1).padStart(3, "0")}.jpg`;
       const fullPath = `${folderName}${fileName}`;
 
-      const s3Stream = s3
-        .getObject({ Bucket: process.env.AWS_S3_BUCKET, Key: s3Key })
-        .createReadStream();
+      let s3Stream;
+      try {
+        const data = await s3Client.send(
+          new GetObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET,
+            Key: s3Key,
+          })
+        );
+        s3Stream = data.Body; // data.Body is a readable stream
+      } catch (err) {
+        console.error(`❌ Failed to fetch object stream for key: ${s3Key}`, err);
+        continue;
+      }
 
       const passthrough = new PassThrough();
 
