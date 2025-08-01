@@ -1,7 +1,0 @@
-Desktop/App/src/pages/ProductDetail.jsx
-Desktop/App/public/assets/enviroshake-aged-cedar.webp
-Desktop/App/package-lock.json
-Desktop/App/public/vite.svg
-Desktop/App/eslint.config.js
-Desktop/App/src/main.jsx
-Desktop/App/src/pages/GalleryPage.jsx
