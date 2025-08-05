@@ -101,31 +101,6 @@ const handleDownload = (activeImg) => {
   downloadImage(url, activeImg.imageName || "image.jpg");
 };
 
-// Upload helper that reports progress
-const uploadFileWithProgress = (file, url, onProgress) => {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) {
-        onProgress((e.loaded / e.total) * 100);
-      }
-    };
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve();
-      } else {
-        reject(new Error(`Upload failed: ${xhr.status}`));
-      }
-    };
-    xhr.onerror = () => reject(new Error("Upload failed"));
-    xhr.open("PUT", url);
-    xhr.setRequestHeader(
-      "Content-Type",
-      file.type || "application/octet-stream",
-    );
-    xhr.send(file);
-  });
-};
 
 export default function GalleryPage() {
   const [images, setImages] = useState([]);
@@ -304,11 +279,21 @@ export default function GalleryPage() {
           fallbackUsed: !file.type,
         });
 
-        await uploadFileWithProgress(file, uploadURL, (p) => {
-          setUploadProgress(
-            Math.round(((i + p / 100) / files.length) * 100),
-          );
+        const uploadRes = await fetch(uploadURL, {
+          method: "PUT",
+          headers: { "Content-Type": file.type || "application/octet-stream" },
+          body: file,
         });
+        if (!uploadRes.ok) {
+          const errorText = await uploadRes.text();
+          console.error("❌ S3 upload failed:", errorText);
+          throw new Error("Upload to S3 failed");
+        } else {
+          console.log("✅ S3 upload succeeded:", generatedName);
+          setUploadProgress(
+            Math.round(((i + 1) / files.length) * 100),
+          );
+        }
 
         await addDoc(collection(db, "images"), {
           groupId,
