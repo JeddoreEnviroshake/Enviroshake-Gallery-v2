@@ -34,14 +34,3 @@ export async function downloadMultipleGroups(groupIds) {
   return res.blob();
 }
 
-export async function fetchImageGroups() {
-  const res = await fetch(`${API_BASE}/image-groups`);
-  if (!res.ok) throw new Error("Failed to fetch image groups");
-  return await res.json();
-}
-
-export async function fetchImagesByGroup(groupId) {
-  const res = await fetch(`${API_BASE}/images/${groupId}`);
-  if (!res.ok) throw new Error("Failed to fetch images");
-  return await res.json();
-}
