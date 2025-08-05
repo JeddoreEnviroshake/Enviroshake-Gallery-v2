@@ -291,9 +291,10 @@ export default function GalleryPage() {
         const imgNum = String(lastIdx + i + 1).padStart(3, "0");
         const baseName = groupMeta.groupName || groupId;
         const generatedName = `${baseName}_${imgNum}`;
+        const fileName = `${generatedName}${extension}`;
 
         const { uploadURL, key } = await generateUploadUrl(
-          `${generatedName}${extension}`,
+          fileName,
           file.type || "image/jpeg",
         );
 
