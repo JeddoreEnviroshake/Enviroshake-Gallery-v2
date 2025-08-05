@@ -1,17 +1,27 @@
 const admin = require("firebase-admin");
-require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
 
-const serviceAccount = {
-  type: "service_account",
-  project_id: process.env.FIREBASE_PROJECT_ID,
-  private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-  client_email: process.env.FIREBASE_CLIENT_EMAIL,
-  token_uri: "https://oauth2.googleapis.com/token",
-};
+// Path to the service account JSON file
+const serviceAccountPath = path.join(__dirname, "secrets", "firebase-service-account.json");
 
-// Debug log
-console.log("✅ Loaded service account email:", serviceAccount.client_email);
+// Safety check: does the file exist?
+if (!fs.existsSync(serviceAccountPath)) {
+  console.error("❌ Service account file not found at:", serviceAccountPath);
+  process.exit(1);
+}
 
+// Load the service account JSON
+let serviceAccount;
+try {
+  serviceAccount = require(serviceAccountPath);
+  console.log("✅ Loaded service account email:", serviceAccount.client_email);
+} catch (err) {
+  console.error("❌ Failed to parse service account JSON:", err);
+  process.exit(1);
+}
+
+// Initialize Firebase Admin
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
@@ -24,9 +34,10 @@ if (!admin.apps.length) {
   }
 }
 
+// Access Firestore
 const db = admin.firestore();
 
-// Optional: verify Firestore access
+// Optional: verify Firestore connection
 (async () => {
   try {
     await db.listCollections();

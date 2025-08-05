@@ -20,11 +20,15 @@ router.get("/:groupId", async (req, res) => {
   const { groupId } = req.params;
 
   try {
+    console.log("🔍 Group ID requested:", groupId); // Step 1 log
+
     const snapshot = await db
       .collection("images")
       .where("groupId", "==", groupId)
       .orderBy("timestamp", "asc")
       .get();
+
+    console.log("📦 Found", snapshot.size, "images for group:", groupId); // Step 1 log
 
     if (snapshot.empty) {
       console.warn(`⚠️ No images found for groupId: ${groupId}`);
@@ -57,9 +61,11 @@ router.get("/:groupId", async (req, res) => {
       const { s3Key } = snapshot.docs[i].data();
 
       if (!s3Key || s3Key.includes("firebasestorage.googleapis.com")) {
-        console.log(`⚠️ Skipping invalid or Firebase-based key: ${s3Key}`);
+        console.warn("⚠️ Skipping image due to invalid key:", s3Key);
         continue;
       }
+
+      console.log("📥 Fetching from S3:", s3Key);
 
       const fileName = `${groupName}_${String(i + 1).padStart(3, "0")}.jpg`;
       const fullPath = `${folderName}${fileName}`;
@@ -72,7 +78,8 @@ router.get("/:groupId", async (req, res) => {
             Key: s3Key,
           })
         );
-        s3Stream = data.Body; // data.Body is a readable stream
+        s3Stream = data.Body;
+        console.log("✅ Successfully fetched from S3:", s3Key);
       } catch (err) {
         console.error(`❌ Failed to fetch object stream for key: ${s3Key}`, err);
         continue;
@@ -88,6 +95,10 @@ router.get("/:groupId", async (req, res) => {
       s3Stream.pipe(passthrough);
       archive.append(passthrough, { name: fullPath });
     }
+
+    archive.on("finish", () => {
+      console.log("✅ Archive successfully finalized.");
+    });
 
     await archive.finalize();
     console.log("✅ Archive finalized and sent.");
