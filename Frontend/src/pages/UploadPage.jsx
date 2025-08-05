@@ -126,12 +126,13 @@ export default function UploadPage() {
         const extension = getFileExt(file.name);
         const imgNum = (i + 1).toString().padStart(3, "0");
         const generatedName = `${groupId}_${imgNum}`;
+        const fileName = `${generatedName}${extension}`;
 
         // 👇 Debug: Check file type
         console.log("Uploading:", file.name, "| type:", file.type);
 
         const { uploadURL, key } = await generateUploadUrl(
-          `${generatedName}${extension}`,
+          fileName,
           file.type,
         );
 
