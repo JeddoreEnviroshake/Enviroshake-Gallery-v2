@@ -30,6 +30,7 @@ import {
   downloadGroup,
   downloadMultipleGroups,
 } from "../services/api";
+import { getFileExt } from "../utils/fileHelpers";
 
 const BUCKET_URL = "https://enviroshake-gallery-images.s3.amazonaws.com";
 
@@ -77,12 +78,6 @@ const makeOptions = (arr) => arr.map((item) => ({ label: item, value: item }));
 
 const formatImageName = (groupName, index) =>
   `${groupName}_${String(index + 1).padStart(3, "0")}`;
-
-const getFileExt = (fileName) => {
-  if (!fileName) return "";
-  const idx = fileName.lastIndexOf(".");
-  return idx !== -1 ? fileName.substring(idx) : "";
-};
 
 // Triggers a browser download using a temporary anchor element
 const downloadImage = (url, filename) => {

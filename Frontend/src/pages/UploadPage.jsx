@@ -7,6 +7,7 @@ import { db, auth } from "../services/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { generateUploadUrl } from "../services/api";
+import { getFileExt } from "../utils/fileHelpers";
 
 const OPTIONS = {
   productLines: ["Enviroshake", "Enviroshingle", "EnviroSlate"],
@@ -80,12 +81,6 @@ export default function UploadPage() {
   ].join("_");
 
   const namePreview = `${groupId}_001`;
-
-  const getFileExt = (fileName) => {
-    if (!fileName) return "";
-    const idx = fileName.lastIndexOf(".");
-    return idx !== -1 ? fileName.substring(idx) : "";
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -5,7 +5,7 @@ const express = require("express");
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const cors = require("cors");
-const { admin, db } = require("./firebaseAdmin");
+const { db } = require("./firebaseAdmin");
 const downloadGroupRoute = require("./routesDownloadGroup");
 const downloadMultipleGroupsRoute = require("./downloadMultipleGroups");
 
