@@ -1,22 +1,17 @@
 const admin = require("firebase-admin");
-const path = require("path");
+require("dotenv").config();
 
-// Load the service account from the /secrets/ folder
-const serviceAccountPath = path.resolve(__dirname, "secrets", "firebase-service-account.json");
+const serviceAccount = {
+  type: "service_account",
+  project_id: process.env.FIREBASE_PROJECT_ID,
+  private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  client_email: process.env.FIREBASE_CLIENT_EMAIL,
+  token_uri: "https://oauth2.googleapis.com/token",
+};
 
-let serviceAccount;
-
-try {
-  serviceAccount = require(serviceAccountPath);
-} catch (error) {
-  console.error("❌ Failed to load Firebase service account key:", error);
-  process.exit(1);
-}
-
-// Debug log — shows which service account is being loaded
+// Debug log
 console.log("✅ Loaded service account email:", serviceAccount.client_email);
 
-// Initialize Firebase Admin SDK
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
@@ -29,10 +24,9 @@ if (!admin.apps.length) {
   }
 }
 
-// Connect to Firestore
 const db = admin.firestore();
 
-// Test Firestore connection (optional but helpful for debugging)
+// Optional: verify Firestore access
 (async () => {
   try {
     await db.listCollections();
