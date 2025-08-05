@@ -20,7 +20,7 @@ router.get("/:groupId", async (req, res) => {
   const { groupId } = req.params;
 
   try {
-    console.log("🔍 Group ID requested:", groupId); // Step 1 log
+    console.log("🔍 Group ID requested:", groupId);
 
     const snapshot = await db
       .collection("images")
@@ -28,11 +28,10 @@ router.get("/:groupId", async (req, res) => {
       .orderBy("timestamp", "asc")
       .get();
 
-    console.log("📦 Found", snapshot.size, "images for group:", groupId); // Step 1 log
+    console.log("📦 Found", snapshot.size, "images for group:", groupId);
 
     if (snapshot.empty) {
-      console.warn(`⚠️ No images found for groupId: ${groupId}`);
-      return res.status(404).json({ message: "No images found." });
+      return res.status(404).json({ message: "No images found for this group." });
     }
 
     const groupName = snapshot.docs[0].data().groupName || groupId;
@@ -40,7 +39,7 @@ router.get("/:groupId", async (req, res) => {
 
     res.set({
       "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${groupName}.zip"`
+      "Content-Disposition": `attachment; filename="${groupName}.zip"`,
     });
 
     const archive = archiver("zip", { zlib: { level: 9 } });
@@ -48,65 +47,60 @@ router.get("/:groupId", async (req, res) => {
 
     archive.on("error", (err) => {
       console.error("❌ Archive error:", err);
-      if (!res.headersSent) {
-        res.status(500).send("Archive generation failed.");
-      }
+      if (!res.headersSent) res.status(500).send("Archive error.");
     });
 
     res.on("error", (err) => {
       console.error("❌ Response stream error:", err);
     });
 
+    const bucketName = process.env.AWS_S3_BUCKET;
+    if (!bucketName) {
+      throw new Error("❌ AWS_S3_BUCKET is not defined in .env");
+    }
+
     for (let i = 0; i < snapshot.docs.length; i++) {
       const { s3Key } = snapshot.docs[i].data();
 
-      if (!s3Key || s3Key.includes("firebasestorage.googleapis.com")) {
-        console.warn("⚠️ Skipping image due to invalid key:", s3Key);
+      if (!s3Key || typeof s3Key !== "string" || !s3Key.startsWith("uploads/")) {
+        console.warn("⚠️ Skipping invalid or non-S3 image:", s3Key);
         continue;
       }
 
-      console.log("📥 Fetching from S3:", s3Key);
-
-      const fileName = `${groupName}_${String(i + 1).padStart(3, "0")}.jpg`;
+      const fileName = `${groupName}_${String(i + 1).padStart(3, "0")}.${s3Key.split('.').pop()}`;
       const fullPath = `${folderName}${fileName}`;
 
-      let s3Stream;
       try {
-        const data = await s3Client.send(
-          new GetObjectCommand({
-            Bucket: process.env.AWS_S3_BUCKET,
-            Key: s3Key,
-          })
+        const { Body } = await s3Client.send(
+          new GetObjectCommand({ Bucket: bucketName, Key: s3Key })
         );
-        s3Stream = data.Body;
-        console.log("✅ Successfully fetched from S3:", s3Key);
+
+        const passthrough = new PassThrough();
+
+        Body.on("error", (err) => {
+          console.error("❌ Stream error from S3:", s3Key, err);
+          passthrough.end();
+        });
+
+        Body.pipe(passthrough);
+        archive.append(passthrough, { name: fullPath });
+
+        console.log("✅ Added to archive:", s3Key);
       } catch (err) {
-        console.error(`❌ Failed to fetch object stream for key: ${s3Key}`, err);
-        continue;
+        console.error(`❌ S3 fetch failed for key: ${s3Key}`, err);
       }
-
-      const passthrough = new PassThrough();
-
-      s3Stream.on("error", (err) => {
-        console.error(`❌ S3 stream error for key: ${s3Key}`, err);
-        passthrough.end(); // avoid breaking archive
-      });
-
-      s3Stream.pipe(passthrough);
-      archive.append(passthrough, { name: fullPath });
     }
 
     archive.on("finish", () => {
-      console.log("✅ Archive successfully finalized.");
+      console.log("✅ Archive finished.");
     });
 
     await archive.finalize();
     console.log("✅ Archive finalized and sent.");
-
   } catch (err) {
-    console.error("❌ Download route error:", err);
+    console.error("❌ Error in download group route:", err);
     if (!res.headersSent) {
-      res.status(500).json({ message: "Failed to download ZIP." });
+      res.status(500).json({ message: "Failed to download group ZIP." });
     } else {
       res.end();
     }
