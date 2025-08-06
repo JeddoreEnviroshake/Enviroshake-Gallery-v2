@@ -398,31 +398,28 @@ export default function GalleryPage() {
 
   useEffect(() => {
     const loadThumbnails = async (groupIds) => {
-      const urls = {};
       await Promise.all(
-        groupIds.map(async (id) => {
+        groupIds.map(async (groupId) => {
           try {
             const q = query(
               collection(db, "images"),
-              where("groupId", "==", id),
-              orderBy("timestamp"),
+              where("groupId", "==", groupId),
+              orderBy("timestamp", "asc"),
               limit(1),
             );
             const snap = await getDocs(q);
-            const data = snap.docs[0]?.data();
-            if (data) {
-              const url =
-                data.s3Key
-                  ? `${BUCKET_URL}/${data.s3Key}`
-                  : data.s3Url || data.url;
-              if (url) urls[id] = url;
+            if (!snap.empty) {
+              const { s3Key } = snap.docs[0].data();
+              if (s3Key) {
+                const url = `${BUCKET_URL}/${s3Key}`;
+                setThumbnailUrls((prev) => ({ ...prev, [groupId]: url }));
+              }
             }
           } catch (err) {
-            console.error("Error loading thumbnail for group", id, err);
+            console.error("Error loading thumbnail for group", groupId, err);
           }
         }),
       );
-      setThumbnailUrls((prev) => ({ ...prev, ...urls }));
     };
     loadThumbnails(paginatedGroupIds);
   }, [paginatedGroupIds]);
@@ -1048,9 +1045,7 @@ export default function GalleryPage() {
                 {/* Main image */}
                 <div className="image-wrapper">
                   <img
-                    src={
-                      thumbnailUrls[groupId] || `${BUCKET_URL}/${firstImage.s3Key}`
-                    }
+                    src={thumbnailUrls[groupId] || ""}
                     alt="Group Thumbnail"
                     className="gallery-thumbnail"
                     style={{ cursor: "pointer" }}
