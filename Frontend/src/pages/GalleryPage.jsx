@@ -9,6 +9,8 @@ import {
   doc,
   updateDoc,
   getDocs,
+  where,
+  limit,
   deleteDoc,
   addDoc,
   serverTimestamp,
@@ -395,23 +397,35 @@ export default function GalleryPage() {
   );
 
   useEffect(() => {
-    const loadThumbnails = (groupIds) => {
+    const loadThumbnails = async (groupIds) => {
       const urls = {};
-      groupIds.forEach((id) => {
-        const firstImage = grouped[id]?.[0];
-        if (firstImage) {
-          const url =
-            firstImage.s3Url ||
-            (firstImage.s3Key
-              ? `${BUCKET_URL}/${firstImage.s3Key}`
-              : firstImage.url);
-          if (url) urls[id] = url;
-        }
-      });
+      await Promise.all(
+        groupIds.map(async (id) => {
+          try {
+            const q = query(
+              collection(db, "images"),
+              where("groupId", "==", id),
+              orderBy("timestamp"),
+              limit(1),
+            );
+            const snap = await getDocs(q);
+            const data = snap.docs[0]?.data();
+            if (data) {
+              const url =
+                data.s3Key
+                  ? `${BUCKET_URL}/${data.s3Key}`
+                  : data.s3Url || data.url;
+              if (url) urls[id] = url;
+            }
+          } catch (err) {
+            console.error("Error loading thumbnail for group", id, err);
+          }
+        }),
+      );
       setThumbnailUrls((prev) => ({ ...prev, ...urls }));
     };
     loadThumbnails(paginatedGroupIds);
-  }, [paginatedGroupIds, grouped]);
+  }, [paginatedGroupIds]);
 
   // Is Internal Only (supports internalOnly or doNotUse on group or image)
   const isInternalOnly = (groupMeta, firstImage) =>
