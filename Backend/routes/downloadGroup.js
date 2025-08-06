@@ -53,44 +53,45 @@ router.get("/:groupId", async (req, res) => {
       console.error("❌ Response stream error:", err);
     });
 
-    for (let i = 0; i < snapshot.docs.length; i++) {
-      const { s3Key } = snapshot.docs[i].data();
+      for (let i = 0; i < snapshot.docs.length; i++) {
+        const { s3Key } = snapshot.docs[i].data();
+        // Use the Firestore key directly to preserve the original 'uploads/' prefix
 
-      if (!s3Key || s3Key.includes("firebasestorage.googleapis.com")) {
-        console.log(`⚠️ Skipping invalid or Firebase-based key: ${s3Key}`);
-        continue;
+        if (!s3Key || s3Key.includes("firebasestorage.googleapis.com")) {
+          console.log(`⚠️ Skipping invalid or Firebase-based key: ${s3Key}`);
+          continue;
+        }
+
+        const fileName = `${groupName}_${String(i + 1).padStart(3, "0")}.jpg`;
+        const fullPath = `${folderName}${fileName}`;
+
+        let s3Stream;
+        try {
+          const data = await s3Client.send(
+            new GetObjectCommand({
+              Bucket: process.env.AWS_S3_BUCKET,
+              Key: s3Key,
+            })
+          );
+          s3Stream = data.Body; // data.Body is a readable stream
+        } catch (err) {
+          console.error(`❌ Failed to fetch object stream for key: ${s3Key}`, err);
+          continue;
+        }
+
+        const passthrough = new PassThrough();
+
+        s3Stream.on("error", (err) => {
+          console.error(`❌ S3 stream error for key: ${s3Key}`, err);
+          passthrough.end(); // avoid breaking archive
+        });
+
+        s3Stream.pipe(passthrough);
+        archive.append(passthrough, { name: fullPath });
       }
 
-      const fileName = `${groupName}_${String(i + 1).padStart(3, "0")}.jpg`;
-      const fullPath = `${folderName}${fileName}`;
-
-      let s3Stream;
-      try {
-        const data = await s3Client.send(
-          new GetObjectCommand({
-            Bucket: process.env.AWS_S3_BUCKET,
-            Key: s3Key,
-          })
-        );
-        s3Stream = data.Body; // data.Body is a readable stream
-      } catch (err) {
-        console.error(`❌ Failed to fetch object stream for key: ${s3Key}`, err);
-        continue;
-      }
-
-      const passthrough = new PassThrough();
-
-      s3Stream.on("error", (err) => {
-        console.error(`❌ S3 stream error for key: ${s3Key}`, err);
-        passthrough.end(); // avoid breaking archive
-      });
-
-      s3Stream.pipe(passthrough);
-      archive.append(passthrough, { name: fullPath });
-    }
-
-    await archive.finalize();
-    console.log("✅ Archive finalized and sent.");
+      await archive.finalize();
+      console.log("✅ Archive finalized and sent.");
 
   } catch (err) {
     console.error("❌ Download route error:", err);
