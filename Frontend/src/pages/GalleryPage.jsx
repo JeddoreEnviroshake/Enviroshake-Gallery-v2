@@ -408,10 +408,13 @@ export default function GalleryPage() {
               limit(1),
             );
             const snap = await getDocs(q);
+            console.log("Loading thumbnail for groupId:", groupId);
+            console.log("Firestore snapshot size:", snap.size);
             if (!snap.empty) {
               const { s3Key } = snap.docs[0].data();
               if (s3Key) {
                 const url = `${BUCKET_URL}/${s3Key}`;
+                console.log("Generated thumbnail URL:", url);
                 setThumbnailUrls((prev) => ({ ...prev, [groupId]: url }));
               }
             }
