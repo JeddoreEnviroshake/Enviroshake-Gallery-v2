@@ -104,37 +104,24 @@ export default function UploadPage() {
 
     setUploading(true);
 
-    try {
-      await addDoc(collection(db, "imageGroups"), {
-        groupId,
-        groupName: groupId,
-        colors: selectedColors.map((c) => c.value),
-        productLine: productLine.value,
-        roofTags: roofTags.map((r) => r.value),
-        projectTags: projectTags.map((p) => p.value),
-        countryTags: countryTags.map((c) => c.value),
-        notes,
-        internalOnly,
-        uploadedBy: userEmail,
-        timestamp: serverTimestamp(),
-        imageCount: selectedFiles.length,
-      });
-
-      let uploaded = 0;
-      for (let i = 0; i < selectedFiles.length; ++i) {
-        const file = selectedFiles[i];
-        const extension = getFileExt(file.name);
-        const imgNum = (i + 1).toString().padStart(3, "0");
-        const generatedName = `${groupId}_${imgNum}`;
-        const fileName = `${generatedName}${extension}`;
+      try {
+        let uploaded = 0;
+        let thumbnailS3Key = null;
+        for (let i = 0; i < selectedFiles.length; ++i) {
+          const file = selectedFiles[i];
+          const extension = getFileExt(file.name);
+          const imgNum = (i + 1).toString().padStart(3, "0");
+          const generatedName = `${groupId}_${imgNum}`;
+          const fileName = `${generatedName}${extension}`;
 
         // 👇 Debug: Check file type
         console.log("Uploading:", file.name, "| type:", file.type);
 
-        const { uploadURL, key } = await generateUploadUrl(
-          fileName,
-          file.type,
-        );
+          const { uploadURL, key } = await generateUploadUrl(
+            fileName,
+            file.type,
+          );
+          if (!thumbnailS3Key) thumbnailS3Key = key;
 
         const uploadRes = await fetch(uploadURL, {
           method: "PUT",
@@ -166,10 +153,26 @@ export default function UploadPage() {
           timestamp: serverTimestamp(),
         });
 
-        uploaded++;
-      }
+          uploaded++;
+        }
 
-      setMessage(`✅ ${uploaded} image${uploaded > 1 ? "s" : ""} uploaded and saved!`);
+        await addDoc(collection(db, "imageGroups"), {
+          groupId,
+          groupName: groupId,
+          colors: selectedColors.map((c) => c.value),
+          productLine: productLine.value,
+          roofTags: roofTags.map((r) => r.value),
+          projectTags: projectTags.map((p) => p.value),
+          countryTags: countryTags.map((c) => c.value),
+          notes,
+          internalOnly,
+          uploadedBy: userEmail,
+          timestamp: serverTimestamp(),
+          imageCount: selectedFiles.length,
+          thumbnailS3Key: thumbnailS3Key,
+        });
+
+        setMessage(`✅ ${uploaded} image${uploaded > 1 ? "s" : ""} uploaded and saved!`);
       setSelectedColors([]);
       setProductLine(null);
       setRoofTags([]);
