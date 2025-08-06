@@ -199,9 +199,11 @@ export default function GalleryPage() {
         ...new Set(imageData.map((img) => img.groupId).filter(Boolean)),
       ];
       const groupDocs = await getDocs(collection(db, "imageGroups"));
+      console.log(`📄 Firestore returned ${groupDocs.length} documents from imageGroups`);
       const groupMap = {};
       groupDocs.forEach((doc) => {
         const data = doc.data();
+        console.log(`🔍 Processing groupId: ${data.groupId}`, data);
         if (groupIds.includes(data.groupId)) {
           groupMap[data.groupId] = { ...data, docId: doc.id };
         }
