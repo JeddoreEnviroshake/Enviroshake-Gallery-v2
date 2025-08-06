@@ -27,7 +27,6 @@ import { FaTrashAlt, FaLock, FaDownload } from "react-icons/fa";
 import { StickyNote } from "lucide-react";
 import {
   generateUploadUrl,
-  downloadGroup,
   downloadMultipleGroups,
 } from "../services/api";
 import { getFileExt } from "../utils/fileHelpers";
@@ -426,8 +425,16 @@ export default function GalleryPage() {
   // Download handlers
 
   const handleDownloadGroup = async (groupId) => {
+    if (!groupId) {
+      alert("No group selected for download");
+      return;
+    }
     try {
-      const blob = await downloadGroup(groupId);
+      const res = await fetch(
+        `/download-group/${encodeURIComponent(groupId)}`
+      );
+      if (!res.ok) throw new Error("Request failed");
+      const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
