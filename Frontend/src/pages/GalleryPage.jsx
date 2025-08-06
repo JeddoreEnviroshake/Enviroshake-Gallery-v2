@@ -149,6 +149,7 @@ export default function GalleryPage() {
   const [showProgress, setShowProgress] = useState(false);
 
   const pageSize = 20;
+  const [thumbnailUrls, setThumbnailUrls] = useState({});
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -393,6 +394,25 @@ export default function GalleryPage() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
   );
+
+  useEffect(() => {
+    const loadThumbnails = (groupIds) => {
+      const urls = {};
+      groupIds.forEach((id) => {
+        const firstImage = grouped[id]?.[0];
+        if (firstImage) {
+          const url =
+            firstImage.s3Url ||
+            (firstImage.s3Key
+              ? `${BUCKET_URL}/${firstImage.s3Key}`
+              : firstImage.url);
+          if (url) urls[id] = url;
+        }
+      });
+      setThumbnailUrls((prev) => ({ ...prev, ...urls }));
+    };
+    loadThumbnails(paginatedGroupIds);
+  }, [paginatedGroupIds, grouped]);
 
   // Is Internal Only (supports internalOnly or doNotUse on group or image)
   const isInternalOnly = (groupMeta, firstImage) =>
@@ -1007,7 +1027,9 @@ export default function GalleryPage() {
                 {/* Main image */}
                 <div className="image-wrapper">
                   <img
-                    src={`${BUCKET_URL}/${firstImage.s3Key}`}
+                    src={
+                      thumbnailUrls[groupId] || `${BUCKET_URL}/${firstImage.s3Key}`
+                    }
                     alt="Group Thumbnail"
                     className="gallery-thumbnail"
                     style={{ cursor: "pointer" }}
