@@ -150,6 +150,7 @@ export default function GalleryPage() {
   const [showProgress, setShowProgress] = useState(false);
 
   const pageSize = 20;
+  // eslint-disable-next-line no-unused-vars
   const [thumbnailUrls, setThumbnailUrls] = useState({});
 
   useEffect(() => {
@@ -1049,11 +1050,18 @@ export default function GalleryPage() {
                 {/* Main image */}
                 <div className="image-wrapper">
                   <img
-                    src={thumbnailUrls[groupId] || ""}
+                    src={
+                      groupMeta.thumbnailS3Key
+                        ? `https://enviroshake-gallery.s3.amazonaws.com/${groupMeta.thumbnailS3Key}`
+                        : '/fallback-thumbnail.png'
+                    }
                     alt="Group Thumbnail"
                     className="gallery-thumbnail"
                     style={{ cursor: "pointer" }}
                     onClick={() => handleImageClick(groupId, 0)}
+                    onError={(e) => {
+                      e.currentTarget.src = '/fallback-thumbnail.png';
+                    }}
                   />
                   {isGroup && groupImages.length > 1 && (
                     <span
