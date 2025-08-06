@@ -398,6 +398,7 @@ export default function GalleryPage() {
 
   useEffect(() => {
     const loadThumbnails = async (groupIds) => {
+      console.log("👀 loadThumbnails triggered with:", groupIds);
       await Promise.all(
         groupIds.map(async (groupId) => {
           try {
