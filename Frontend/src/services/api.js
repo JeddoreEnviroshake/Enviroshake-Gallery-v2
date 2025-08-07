@@ -2,11 +2,11 @@
 
 const API_BASE = "http://localhost:4000"; // Update this if deployed elsewhere
 
-export async function generateUploadUrl(filename, fileType) {
+export async function generateUploadUrl(fileName, fileType) {
   const res = await fetch(`${API_BASE}/generate-upload-url`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ filename, fileType }),
+    body: JSON.stringify({ fileName, fileType }), // ✅ fixed from "filename"
   });
   if (!res.ok) {
     throw new Error("Failed to generate upload URL");
