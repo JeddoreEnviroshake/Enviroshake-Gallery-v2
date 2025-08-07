@@ -271,9 +271,10 @@ export default function GalleryPage() {
         const generatedName = `${baseName}_${imgNum}`;
         const fileName = `${generatedName}${extension}`;
 
+        const fallbackType = file.type || "image/jpeg";
         const { uploadURL, key } = await generateUploadUrl(
           fileName,
-          file.type || "image/jpeg",
+          fallbackType,
         );
 
         console.log("Uploading to S3 →", {
@@ -284,7 +285,7 @@ export default function GalleryPage() {
 
         const uploadRes = await fetch(uploadURL, {
           method: "PUT",
-          headers: { "Content-Type": file.type || "application/octet-stream" },
+          headers: { "Content-Type": fallbackType },
           body: file,
         });
         if (!uploadRes.ok) {
