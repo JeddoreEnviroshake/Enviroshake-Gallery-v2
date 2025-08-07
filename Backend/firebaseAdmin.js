@@ -3,47 +3,47 @@ const fs = require("fs");
 const path = require("path");
 
 // Path to the service account JSON file
-const serviceAccountPath = path.join(__dirname, "secrets", "firebase-service-account.json");
+const serviceAccountPath = path.resolve(__dirname, "secrets", "firebase-service-account.json");
 
-// Safety check: does the file exist?
+// Check if service account file exists
 if (!fs.existsSync(serviceAccountPath)) {
   console.error("❌ Service account file not found at:", serviceAccountPath);
   process.exit(1);
 }
 
-// Load the service account JSON
+// Load the service account credentials
 let serviceAccount;
 try {
   serviceAccount = require(serviceAccountPath);
-  console.log("✅ Loaded service account email:", serviceAccount.client_email);
+  console.log("✅ Loaded Firebase service account:", serviceAccount.client_email);
 } catch (err) {
-  console.error("❌ Failed to parse service account JSON:", err);
+  console.error("❌ Failed to load service account JSON:", err);
   process.exit(1);
 }
 
-// Initialize Firebase Admin
-if (!admin.apps.length) {
-  try {
+// Initialize Firebase Admin SDK
+try {
+  if (!admin.apps.length) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
     console.log("✅ Firebase Admin initialized.");
-  } catch (err) {
-    console.error("❌ Firebase initialization failed:", err);
-    process.exit(1);
   }
+} catch (err) {
+  console.error("❌ Failed to initialize Firebase Admin:", err);
+  process.exit(1);
 }
 
-// Access Firestore
+// Get Firestore instance
 const db = admin.firestore();
 
-// Optional: verify Firestore connection
+// Optional: test Firestore connection
 (async () => {
   try {
     await db.listCollections();
     console.log("✅ Firestore connection verified.");
   } catch (err) {
-    console.error("❌ Firebase connection failed:", err);
+    console.error("❌ Firestore connection failed:", err);
   }
 })();
 
