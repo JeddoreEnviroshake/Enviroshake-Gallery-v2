@@ -1,11 +1,10 @@
-// ✅ Load environment variables from .env file
 require("dotenv").config();
-
 const express = require("express");
+const cors = require("cors");
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const cors = require("cors");
-const { admin, db } = require("./firebaseAdmin");
+
+const { db } = require("./firebaseAdmin"); // ✅ Use shared connection
 const downloadGroupRoute = require("./routesDownloadGroup");
 const downloadMultipleGroupsRoute = require("./downloadMultipleGroups");
 
@@ -13,31 +12,24 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ Test Firestore connection
+// ✅ Check Firebase connection
 db.collection("test-connection")
   .get()
   .then(snapshot => {
-    console.log(`✅ Firebase connected. Found ${snapshot.size} documents in 'test-connection' collection.`);
+    console.log(`✅ Firebase connected. Found ${snapshot.size} docs in test-connection`);
   })
-  .catch(error => {
-    console.error("❌ Firebase connection failed:", error);
+  .catch(err => {
+    console.error("❌ Firebase connection failed:", err);
   });
 
-// ✅ Validate required ENV variables
-const REQUIRED_ENV_VARS = [
-  "AWS_ACCESS_KEY_ID",
-  "AWS_SECRET_ACCESS_KEY",
-  "AWS_REGION",
-  "AWS_S3_BUCKET"
-];
-REQUIRED_ENV_VARS.forEach(name => {
+// ✅ Check required ENV variables
+["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION", "AWS_S3_BUCKET"].forEach(name => {
   if (!process.env[name]) {
-    console.error(`❌ Missing required environment variable: ${name}`);
+    console.error(`❌ Missing required env var: ${name}`);
     process.exit(1);
   }
 });
 
-// ✅ AWS SDK v3 – for uploads and deletions
 const s3Client = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
@@ -48,7 +40,7 @@ const s3Client = new S3Client({
 
 const BUCKET = process.env.AWS_S3_BUCKET;
 
-// ✅ Generate pre-signed upload URL
+// ✅ Generate S3 upload URL
 app.post("/generate-upload-url", async (req, res) => {
   const { fileName, fileType } = req.body;
 
@@ -64,18 +56,15 @@ app.post("/generate-upload-url", async (req, res) => {
   });
 
   try {
-    const uploadURL = await getSignedUrl(s3Client, command, {
-      expiresIn: 60,
-    });
-
+    const uploadURL = await getSignedUrl(s3Client, command, { expiresIn: 60 });
     res.send({ uploadURL, key });
-  } catch (error) {
-    console.error("❌ Failed to generate presigned URL:", error);
-    res.status(500).json({ error: "Failed to generate upload URL" });
+  } catch (err) {
+    console.error("❌ Failed to generate upload URL:", err);
+    res.status(500).json({ error: "Upload URL error" });
   }
 });
 
-// ✅ Delete image from S3 + Firestore
+// ✅ Delete image
 app.delete("/delete-image", async (req, res) => {
   const { s3Key, docId } = req.body;
 
@@ -84,20 +73,16 @@ app.delete("/delete-image", async (req, res) => {
   }
 
   try {
-    const deleteCommand = new DeleteObjectCommand({
-      Bucket: BUCKET,
-      Key: s3Key,
-    });
-    await s3Client.send(deleteCommand);
+    await s3Client.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: s3Key }));
     await db.collection("images").doc(docId).delete();
-    res.status(200).json({ message: "Image deleted successfully" });
+    res.status(200).json({ message: "Image deleted" });
   } catch (err) {
-    console.error("❌ Failed to delete:", err);
-    res.status(500).json({ error: "Failed to delete image" });
+    console.error("❌ Failed to delete image:", err);
+    res.status(500).json({ error: "Delete failed" });
   }
 });
 
-// ✅ ZIP download routes
+// ✅ Routes
 app.use("/download-group", downloadGroupRoute);
 app.use("/download-multiple-groups", downloadMultipleGroupsRoute);
 

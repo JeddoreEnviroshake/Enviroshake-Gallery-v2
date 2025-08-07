@@ -26,6 +26,7 @@ try {
   if (!admin.apps.length) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
+      storageBucket: "enviroshake-gallery-app.appspot.com", // <-- Add your bucket here
     });
     console.log("✅ Firebase Admin initialized.");
   }
@@ -34,8 +35,9 @@ try {
   process.exit(1);
 }
 
-// Get Firestore instance
+// Get Firestore and Storage instances
 const db = admin.firestore();
+const bucket = admin.storage().bucket(); // <-- This enables file access for ZIP downloads
 
 // Optional: test Firestore connection
 (async () => {
@@ -47,4 +49,4 @@ const db = admin.firestore();
   }
 })();
 
-module.exports = { admin, db };
+module.exports = { admin, db, bucket };

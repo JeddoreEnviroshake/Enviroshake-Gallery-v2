@@ -1,11 +1,10 @@
 const express = require("express");
 const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
 const archiver = require("archiver");
-const admin = require("firebase-admin");
 const { PassThrough } = require("stream");
+const { db } = require("./firebaseAdmin"); // ✅ Use shared admin/db setup
 require("dotenv").config();
 
-const db = admin.firestore();
 const router = express.Router();
 
 const s3Client = new S3Client({
@@ -28,8 +27,6 @@ router.get("/:groupId", async (req, res) => {
       .orderBy("timestamp", "asc")
       .get();
 
-    console.log("📦 Found", snapshot.size, "images for group:", groupId);
-
     if (snapshot.empty) {
       return res.status(404).json({ message: "No images found for this group." });
     }
@@ -44,15 +41,6 @@ router.get("/:groupId", async (req, res) => {
 
     const archive = archiver("zip", { zlib: { level: 9 } });
     archive.pipe(res);
-
-    archive.on("error", (err) => {
-      console.error("❌ Archive error:", err);
-      if (!res.headersSent) res.status(500).send("Archive error.");
-    });
-
-    res.on("error", (err) => {
-      console.error("❌ Response stream error:", err);
-    });
 
     const bucketName = process.env.AWS_S3_BUCKET;
     if (!bucketName) {
@@ -76,23 +64,26 @@ router.get("/:groupId", async (req, res) => {
         );
 
         const passthrough = new PassThrough();
-
-        Body.on("error", (err) => {
-          console.error("❌ Stream error from S3:", s3Key, err);
-          passthrough.end();
-        });
-
         Body.pipe(passthrough);
-        archive.append(passthrough, { name: fullPath });
 
+        archive.append(passthrough, { name: fullPath });
         console.log("✅ Added to archive:", s3Key);
       } catch (err) {
         console.error(`❌ S3 fetch failed for key: ${s3Key}`, err);
       }
     }
 
+    archive.on("error", (err) => {
+      console.error("❌ Archive error:", err);
+      if (!res.headersSent) res.status(500).send("Archive error.");
+    });
+
+    res.on("error", (err) => {
+      console.error("❌ Response stream error:", err);
+    });
+
     archive.on("finish", () => {
-      console.log("✅ Archive finished.");
+      console.log("✅ Archive stream finished.");
     });
 
     await archive.finalize();
