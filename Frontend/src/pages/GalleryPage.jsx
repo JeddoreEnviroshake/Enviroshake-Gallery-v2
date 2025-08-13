@@ -92,6 +92,10 @@ const downloadImage = (url, filename) => {
   a.remove();
 };
 
+// Resolves the best source URL for an image object
+const imgSrc = (img) =>
+  img?.s3Url || (img?.s3Key ? `${BUCKET_URL}/${img.s3Key}` : img?.url);
+
 // Determines the download URL from image data and triggers the download
 const handleDownload = (activeImg) => {
   if (!activeImg) return;
@@ -1323,7 +1327,7 @@ export default function GalleryPage() {
             </div>
             <div className="single-image-container">
               <img
-                src={modalImage.url}
+                src={imgSrc(modalImage.groupImages?.[modalIndex] ?? modalImage)}
                 alt=""
                 className="modal-main-image"
                 style={{ maxWidth: "100%", maxHeight: "70vh", objectFit: "contain" }}
