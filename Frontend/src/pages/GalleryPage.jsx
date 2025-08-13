@@ -31,7 +31,7 @@ import {
   generateUploadUrl,
   downloadMultipleGroups,
 } from "../services/api";
-import { getFileExt } from "../utils/fileHelpers";
+import { getFileExt, srcFromImage } from "../utils/fileHelpers";
 
 const BUCKET_URL = "https://enviroshake-gallery-images.s3.amazonaws.com";
 
@@ -95,9 +95,7 @@ const downloadImage = (url, filename) => {
 // Determines the download URL from image data and triggers the download
 const handleDownload = (activeImg) => {
   if (!activeImg) return;
-  const url =
-    activeImg.s3Url ||
-    (activeImg.s3Key ? `${BUCKET_URL}/${activeImg.s3Key}` : activeImg.url);
+  const url = srcFromImage(activeImg);
   if (!url) return;
   downloadImage(url, activeImg.imageName || "image.jpg");
 };
