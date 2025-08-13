@@ -9,8 +9,6 @@ import {
   doc,
   updateDoc,
   getDocs,
-  where,
-  limit,
   deleteDoc,
   addDoc,
   serverTimestamp,
@@ -31,9 +29,8 @@ import {
   generateUploadUrl,
   downloadMultipleGroups,
 } from "../services/api";
-import { getFileExt, srcFromImage } from "../utils/fileHelpers";
-
-const BUCKET_URL = "https://enviroshake-gallery-images.s3.amazonaws.com";
+import { getFileExt } from "../utils/fileHelpers";
+import { srcFromImage } from "../utils/imageUrl";
 
 const OPTIONS = {
   productLines: ["Enviroshake", "Enviroshingle", "EnviroSlate"],
@@ -92,10 +89,6 @@ const downloadImage = (url, filename) => {
   a.remove();
 };
 
-// Resolves the best source URL for an image object
-const imgSrc = (img) =>
-  img?.s3Url || (img?.s3Key ? `${BUCKET_URL}/${img.s3Key}` : img?.url);
-
 // Determines the download URL from image data and triggers the download
 const handleDownload = (activeImg) => {
   if (!activeImg) return;
@@ -103,11 +96,6 @@ const handleDownload = (activeImg) => {
   if (!url) return;
   downloadImage(url, activeImg.imageName || "image.jpg");
 };
-
-// Resolves an image object's display source
-const imgSrc = (img) =>
-  img?.s3Url ||
-  (img?.s3Key ? `${BUCKET_URL}/${img.s3Key}` : img?.url || "/fallback-thumbnail.png");
 
 
 export default function GalleryPage() {
@@ -158,7 +146,6 @@ export default function GalleryPage() {
 
   const pageSize = 20;
   // eslint-disable-next-line no-unused-vars
-  const [thumbnailUrls, setThumbnailUrls] = useState({});
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -405,38 +392,6 @@ export default function GalleryPage() {
     currentPage * pageSize,
   );
 
-  useEffect(() => {
-    const loadThumbnails = async (groupIds) => {
-      console.log("👀 loadThumbnails triggered with:", groupIds);
-      await Promise.all(
-        groupIds.map(async (groupId) => {
-          try {
-            const q = query(
-              collection(db, "images"),
-              where("groupId", "==", groupId),
-              orderBy("timestamp", "asc"),
-              limit(1),
-            );
-            const snap = await getDocs(q);
-            console.log("Loading thumbnail for groupId:", groupId);
-            console.log("Firestore snapshot size:", snap.size);
-            if (!snap.empty) {
-              const { s3Key } = snap.docs[0].data();
-              if (s3Key) {
-                const url = `${BUCKET_URL}/${s3Key}`;
-                console.log("Generated thumbnail URL:", url);
-                setThumbnailUrls((prev) => ({ ...prev, [groupId]: url }));
-              }
-            }
-          } catch (err) {
-            console.error("Error loading thumbnail for group", groupId, err);
-          }
-        }),
-      );
-    };
-    loadThumbnails(paginatedGroupIds);
-  }, [paginatedGroupIds]);
-
   // Is Internal Only (supports internalOnly or doNotUse on group or image)
   const isInternalOnly = (groupMeta, firstImage) =>
     !!(
@@ -547,9 +502,7 @@ export default function GalleryPage() {
       groupMeta = { groupName: activeImg.groupName };
     }
 
-    const url =
-      activeImg.s3Key ? `${BUCKET_URL}/${activeImg.s3Key}` : activeImg.url;
-    const modalData = { url, groupId: activeGroupId, groupImages, groupMeta };
+    const modalData = { groupId: activeGroupId, groupImages, groupMeta };
     console.log("modalImage", modalData);
     setModalImage({
       ...modalData,
@@ -573,9 +526,7 @@ export default function GalleryPage() {
     const activeImg = isGroup
       ? modalImage.groupImages[modalIndex]
       : modalImage;
-    const src = activeImg.s3Key
-      ? `${BUCKET_URL}/${activeImg.s3Key}`
-      : activeImg.url;
+    const src = srcFromImage(activeImg);
     const overlay = (
       <div className="fullscreen-overlay">
         <img
@@ -972,7 +923,9 @@ export default function GalleryPage() {
               groupMeta?.groupName ||
               (isGroup ? groupId : groupId.replace("ungrouped-", ""));
             const displayName = formatImageName(groupName, 0);
-            const thumbSrc = imgSrc(firstImage);
+            const thumbSrc =
+              srcFromImage(firstImage) ||
+              `${import.meta.env.BASE_URL}Enviroshake_logo/logo-enviroshake-square.jpg`;
             return (
               <div
                 key={groupId}
@@ -1187,55 +1140,61 @@ export default function GalleryPage() {
               onSlideChange={(swiper) => setModalIndex(swiper.activeIndex)}
               style={{ width: "100%", height: "380px", marginBottom: 16 }}
             >
-              {modalImage.groupImages.map((img) => (
-                <SwiperSlide key={img.id}>
-                  <div
-                    style={{
-                      position: "relative",
-                      width: "100%",
-                      height: "100%",
-                    }}
-                  >
-                    <img
-                      src={`${BUCKET_URL}/${img.s3Key}`}
-                      alt=""
-                      className="modal-main-image"
+              {modalImage.groupImages.map((img) => {
+                const src = srcFromImage(img);
+                return (
+                  <SwiperSlide key={img.id}>
+                    <div
                       style={{
-                        maxWidth: "100%",
-                        maxHeight: "70vh",
-                        objectFit: "contain",
-                        display: "block",
-                        borderRadius: "10px",
-                        margin: "0 auto",
-                        cursor: "zoom-in",
+                        position: "relative",
+                        width: "100%",
+                        height: "100%",
                       }}
-                      onDoubleClick={handleImageDoubleClick}
-                    />
-                    <span
-                      className="delete-icon"
-                      title="Delete photo"
-                      style={{ right: 28, bottom: 20, zIndex: 100 }}
-                      onClick={() => handleDeletePhoto(img)}
                     >
-                      <FaTrashAlt />
-                    </span>
-                  </div>
-                </SwiperSlide>
-              ))}
+                      <img
+                        src={src}
+                        alt=""
+                        className="modal-main-image"
+                        style={{
+                          maxWidth: "100%",
+                          maxHeight: "70vh",
+                          objectFit: "contain",
+                          display: "block",
+                          borderRadius: "10px",
+                          margin: "0 auto",
+                          cursor: "zoom-in",
+                        }}
+                        onDoubleClick={handleImageDoubleClick}
+                      />
+                      <span
+                        className="delete-icon"
+                        title="Delete photo"
+                        style={{ right: 28, bottom: 20, zIndex: 100 }}
+                        onClick={() => handleDeletePhoto(img)}
+                      >
+                        <FaTrashAlt />
+                      </span>
+                    </div>
+                  </SwiperSlide>
+                );
+              })}
             </Swiper>
             <div className="thumbnail-row">
-              {modalImage.groupImages.map((img, idx) => (
-                <img
-                  key={img.id}
-                  src={`${BUCKET_URL}/${img.s3Key}`}
-                  alt=""
-                  className={`thumbnail${modalIndex === idx ? " selected" : ""}`}
-                  onClick={() => {
-                    setModalIndex(idx);
-                    if (mainSwiper) mainSwiper.slideTo(idx);
-                  }}
-                />
-              ))}
+              {modalImage.groupImages.map((img, idx) => {
+                const src = srcFromImage(img);
+                return (
+                  <img
+                    key={img.id}
+                    src={src}
+                    alt=""
+                    className={`thumbnail${modalIndex === idx ? " selected" : ""}`}
+                    onClick={() => {
+                      setModalIndex(idx);
+                      if (mainSwiper) mainSwiper.slideTo(idx);
+                    }}
+                  />
+                );
+              })}
               {modalImage.groupImages.length === 1 && (
                 <img
                   src={`${import.meta.env.BASE_URL}Enviroshake_logo/logo-enviroshake-square.jpg`}
@@ -1324,7 +1283,9 @@ export default function GalleryPage() {
             </div>
             <div className="single-image-container">
               <img
-                src={imgSrc(modalImage.groupImages?.[modalIndex] ?? modalImage)}
+                src={srcFromImage(
+                  modalImage.groupImages?.[modalIndex] ?? modalImage,
+                )}
                 alt=""
                 className="modal-main-image"
                 style={{ maxWidth: "100%", maxHeight: "70vh", objectFit: "contain" }}
