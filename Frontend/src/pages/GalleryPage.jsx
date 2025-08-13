@@ -32,8 +32,13 @@ import {
   downloadMultipleGroups,
 } from "../services/api";
 import { getFileExt } from "../utils/fileHelpers";
+import { srcFromImage } from "../utils/imageUrl";
 
-const BUCKET_URL = "https://enviroshake-gallery-images.s3.amazonaws.com";
+// Build a safe image src for any image record (group or single).
+// Falls back to the green logo square if nothing resolvable.
+const imgSrc = (img) =>
+  srcFromImage(img) ||
+  `${import.meta.env.BASE_URL}Enviroshake_logo/logo-enviroshake-square.jpg`;
 
 const OPTIONS = {
   productLines: ["Enviroshake", "Enviroshingle", "EnviroSlate"],
@@ -95,9 +100,7 @@ const downloadImage = (url, filename) => {
 // Determines the download URL from image data and triggers the download
 const handleDownload = (activeImg) => {
   if (!activeImg) return;
-  const url =
-    activeImg.s3Url ||
-    (activeImg.s3Key ? `${BUCKET_URL}/${activeImg.s3Key}` : activeImg.url);
+  const url = srcFromImage(activeImg);
   if (!url) return;
   downloadImage(url, activeImg.imageName || "image.jpg");
 };
@@ -416,7 +419,7 @@ export default function GalleryPage() {
             if (!snap.empty) {
               const { s3Key } = snap.docs[0].data();
               if (s3Key) {
-                const url = `${BUCKET_URL}/${s3Key}`;
+                const url = srcFromImage({ s3Key });
                 console.log("Generated thumbnail URL:", url);
                 setThumbnailUrls((prev) => ({ ...prev, [groupId]: url }));
               }
@@ -540,8 +543,7 @@ export default function GalleryPage() {
       groupMeta = { groupName: activeImg.groupName };
     }
 
-    const url =
-      activeImg.s3Key ? `${BUCKET_URL}/${activeImg.s3Key}` : activeImg.url;
+    const url = srcFromImage(activeImg);
     const modalData = { url, groupId: activeGroupId, groupImages, groupMeta };
     console.log("modalImage", modalData);
     setModalImage({
@@ -566,9 +568,7 @@ export default function GalleryPage() {
     const activeImg = isGroup
       ? modalImage.groupImages[modalIndex]
       : modalImage;
-    const src = activeImg.s3Key
-      ? `${BUCKET_URL}/${activeImg.s3Key}`
-      : activeImg.url;
+    const src = imgSrc(activeImg);
     const overlay = (
       <div className="fullscreen-overlay">
         <img
@@ -1051,17 +1051,13 @@ export default function GalleryPage() {
                 {/* Main image */}
                 <div className="image-wrapper">
                   <img
-                    src={
-                      groupMeta.thumbnailS3Key
-                        ? `https://enviroshake-gallery.s3.amazonaws.com/${groupMeta.thumbnailS3Key}`
-                        : '/fallback-thumbnail.png'
-                    }
+                    src={imgSrc({ s3Key: groupMeta.thumbnailS3Key })}
                     alt="Group Thumbnail"
                     className="gallery-thumbnail"
                     style={{ cursor: "pointer" }}
                     onClick={() => handleImageClick(groupId, 0)}
                     onError={(e) => {
-                      e.currentTarget.src = '/fallback-thumbnail.png';
+                      e.currentTarget.src = `${import.meta.env.BASE_URL}Enviroshake_logo/logo-enviroshake-square.jpg`;
                     }}
                   />
                   {isGroup && groupImages.length > 1 && (
@@ -1196,7 +1192,7 @@ export default function GalleryPage() {
                     }}
                   >
                     <img
-                      src={`${BUCKET_URL}/${img.s3Key}`}
+                      src={imgSrc(img)}
                       alt=""
                       className="modal-main-image"
                       style={{
@@ -1226,7 +1222,7 @@ export default function GalleryPage() {
               {modalImage.groupImages.map((img, idx) => (
                 <img
                   key={img.id}
-                  src={`${BUCKET_URL}/${img.s3Key}`}
+                  src={imgSrc(img)}
                   alt=""
                   className={`thumbnail${modalIndex === idx ? " selected" : ""}`}
                   onClick={() => {
@@ -1323,7 +1319,7 @@ export default function GalleryPage() {
             </div>
             <div className="single-image-container">
               <img
-                src={modalImage.url}
+                src={imgSrc(modalImage)}
                 alt=""
                 className="modal-main-image"
                 style={{ maxWidth: "100%", maxHeight: "70vh", objectFit: "contain" }}
