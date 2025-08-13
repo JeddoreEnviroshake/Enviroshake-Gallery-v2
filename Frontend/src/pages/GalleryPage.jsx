@@ -81,6 +81,11 @@ const formatImageName = (groupName, index) =>
   `${groupName}_${String(index + 1).padStart(3, "0")}`;
 
 
+// Returns the best image source for the given image object
+const imgSrc = (img) =>
+  img?.s3Url || (img?.s3Key ? `${BUCKET_URL}/${img.s3Key}` : img?.url);
+
+
 // Triggers a browser download using a temporary anchor element
 const downloadImage = (url, filename) => {
   if (!url) return;
@@ -95,9 +100,7 @@ const downloadImage = (url, filename) => {
 // Determines the download URL from image data and triggers the download
 const handleDownload = (activeImg) => {
   if (!activeImg) return;
-  const url =
-    activeImg.s3Url ||
-    (activeImg.s3Key ? `${BUCKET_URL}/${activeImg.s3Key}` : activeImg.url);
+  const url = imgSrc(activeImg);
   if (!url) return;
   downloadImage(url, activeImg.imageName || "image.jpg");
 };
@@ -416,7 +419,7 @@ export default function GalleryPage() {
             if (!snap.empty) {
               const { s3Key } = snap.docs[0].data();
               if (s3Key) {
-                const url = `${BUCKET_URL}/${s3Key}`;
+                const url = imgSrc({ s3Key });
                 console.log("Generated thumbnail URL:", url);
                 setThumbnailUrls((prev) => ({ ...prev, [groupId]: url }));
               }
@@ -540,8 +543,7 @@ export default function GalleryPage() {
       groupMeta = { groupName: activeImg.groupName };
     }
 
-    const url =
-      activeImg.s3Key ? `${BUCKET_URL}/${activeImg.s3Key}` : activeImg.url;
+    const url = imgSrc(activeImg);
     const modalData = { url, groupId: activeGroupId, groupImages, groupMeta };
     console.log("modalImage", modalData);
     setModalImage({
@@ -566,9 +568,7 @@ export default function GalleryPage() {
     const activeImg = isGroup
       ? modalImage.groupImages[modalIndex]
       : modalImage;
-    const src = activeImg.s3Key
-      ? `${BUCKET_URL}/${activeImg.s3Key}`
-      : activeImg.url;
+    const src = imgSrc(activeImg);
     const overlay = (
       <div className="fullscreen-overlay">
         <img
@@ -1196,7 +1196,7 @@ export default function GalleryPage() {
                     }}
                   >
                     <img
-                      src={`${BUCKET_URL}/${img.s3Key}`}
+                      src={imgSrc(img)}
                       alt=""
                       className="modal-main-image"
                       style={{
@@ -1226,7 +1226,7 @@ export default function GalleryPage() {
               {modalImage.groupImages.map((img, idx) => (
                 <img
                   key={img.id}
-                  src={`${BUCKET_URL}/${img.s3Key}`}
+                  src={imgSrc(img)}
                   alt=""
                   className={`thumbnail${modalIndex === idx ? " selected" : ""}`}
                   onClick={() => {
