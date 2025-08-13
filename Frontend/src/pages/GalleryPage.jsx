@@ -104,6 +104,11 @@ const handleDownload = (activeImg) => {
   downloadImage(url, activeImg.imageName || "image.jpg");
 };
 
+// Resolves an image object's display source
+const imgSrc = (img) =>
+  img?.s3Url ||
+  (img?.s3Key ? `${BUCKET_URL}/${img.s3Key}` : img?.url || "/fallback-thumbnail.png");
+
 
 export default function GalleryPage() {
   const [images, setImages] = useState([]);
@@ -967,6 +972,7 @@ export default function GalleryPage() {
               groupMeta?.groupName ||
               (isGroup ? groupId : groupId.replace("ungrouped-", ""));
             const displayName = formatImageName(groupName, 0);
+            const thumbSrc = imgSrc(firstImage);
             return (
               <div
                 key={groupId}
@@ -1053,18 +1059,11 @@ export default function GalleryPage() {
                 {/* Main image */}
                 <div className="image-wrapper">
                   <img
-                    src={
-                      groupMeta.thumbnailS3Key
-                        ? `https://enviroshake-gallery.s3.amazonaws.com/${groupMeta.thumbnailS3Key}`
-                        : '/fallback-thumbnail.png'
-                    }
+                    src={thumbSrc}
                     alt="Group Thumbnail"
                     className="gallery-thumbnail"
                     style={{ cursor: "pointer" }}
                     onClick={() => handleImageClick(groupId, 0)}
-                    onError={(e) => {
-                      e.currentTarget.src = '/fallback-thumbnail.png';
-                    }}
                   />
                   {isGroup && groupImages.length > 1 && (
                     <span
