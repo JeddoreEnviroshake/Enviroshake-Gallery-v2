@@ -25,6 +25,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import { FaTrashAlt, FaLock, FaDownload } from "react-icons/fa";
 import { StickyNote } from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
 import {
   generateUploadUrl,
   downloadMultipleGroups,
@@ -248,17 +249,22 @@ export default function GalleryPage() {
 
   const addPhotosToGroup = async (files) => {
     if (!modalImage?.groupImages?.length) return;
+
     const first = modalImage.groupImages[0];
     const groupId = first.groupId;
     if (!groupId) {
       alert("Cannot add photos to an ungrouped image.");
       return;
     }
+
     const groupMeta = modalImage.groupMeta || {};
+
     setAddingPhotos(true);
     setShowProgress(true);
     setUploadProgress(0);
+
     try {
+      // Determine the next numeric index based on existing names like ..._001
       let lastIdx = 0;
       modalImage.groupImages.forEach((img) => {
         const m = img.imageName && img.imageName.match(/_(\d+)$/);
@@ -274,32 +280,25 @@ export default function GalleryPage() {
         const imgNum = String(lastIdx + i + 1).padStart(3, "0");
         const baseName = groupMeta.groupName || groupId;
         const generatedName = `${baseName}_${imgNum}`;
-        const fileName = `${generatedName}${extension}`;
 
-        const fallbackType = file.type || "image/jpeg";
+        // NEW: unique imageId for the backend contract
+        const imageId = uuidv4();
+
+        // NEW: call the backend with the new payload shape
         const { uploadURL, key } = await generateUploadUrl({
           groupId,
-          imageId: generatedName,
-          fileType: fallbackType,
-          fileName,
+          imageId,
+          fileType: file.type || "image/jpeg",
+          fileName: `${generatedName}${extension}`,
           isThumbnail: false,
         });
 
-        console.log("Uploading to S3 →", {
-          fileName: file.name,
-          fileType: file.type,
-          fallbackUsed: !file.type,
+        // Upload to the signed URL, keeping the existing progress UI
+        await uploadFileWithProgress(file, uploadURL, (p) => {
+          setUploadProgress(Math.round(((i + p / 100) / files.length) * 100));
         });
 
-        try {
-          await uploadToSignedUrl(uploadURL, file, fallbackType);
-          console.log("✅ S3 upload succeeded:", generatedName);
-          setUploadProgress(Math.round(((i + 1) / files.length) * 100));
-        } catch (e) {
-          console.error("❌ S3 upload failed:", e);
-          throw new Error("Upload to S3 failed");
-        }
-
+        // Save the Firestore image document as before
         await addDoc(collection(db, "images"), {
           groupId,
           groupName: groupMeta.groupName || groupId,
@@ -318,6 +317,7 @@ export default function GalleryPage() {
         });
       }
 
+      // Bump group imageCount
       if (groupMeta.docId) {
         await updateDoc(doc(db, "imageGroups", groupMeta.docId), {
           imageCount:
@@ -329,6 +329,7 @@ export default function GalleryPage() {
       console.error(e);
       alert("Failed to upload image(s).");
     }
+
     setShowProgress(false);
     setAddingPhotos(false);
     setUploadProgress(0);
