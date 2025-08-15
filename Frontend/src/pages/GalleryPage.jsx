@@ -29,8 +29,8 @@ import { v4 as uuidv4 } from "uuid";
 import {
   generateUploadUrl,
   downloadMultipleGroups,
-  uploadToSignedUrl,
   imageUrlFromKey,
+  uploadFileWithProgress,
 } from "../services/api";
 import { getFileExt } from "../utils/fileHelpers";
 
