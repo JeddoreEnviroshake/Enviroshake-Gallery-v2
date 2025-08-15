@@ -38,6 +38,38 @@ export async function uploadToSignedUrl(uploadURL, fileOrBlob, contentType) {
   return res;
 }
 
+// Uploads a file to a signed URL while reporting progress via callback
+export function uploadFileWithProgress(file, uploadURL, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", uploadURL);
+    xhr.setRequestHeader(
+      "Content-Type",
+      file.type || "application/octet-stream"
+    );
+
+    if (xhr.upload && typeof onProgress === "function") {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = (event.loaded / event.total) * 100;
+          onProgress(percent);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(xhr.response);
+      } else {
+        reject(new Error(`Upload failed with status ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Network error"));
+
+    xhr.send(file);
+  });
+}
+
 export function imageUrlFromKey(s3Key) {
   return `${API_BASE}/get-object/${encodeURIComponent(s3Key)}`;
 }
