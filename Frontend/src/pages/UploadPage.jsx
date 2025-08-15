@@ -8,6 +8,7 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { generateUploadUrl, uploadToSignedUrl } from "../services/api";
 import { getFileExt } from "../utils/fileHelpers";
+import { v4 as uuidv4 } from "uuid";
 
 const OPTIONS = {
   productLines: ["Enviroshake", "Enviroshingle", "EnviroSlate"],
@@ -38,6 +39,7 @@ export default function UploadPage() {
   const [message, setMessage] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [dragOver, setDragOver] = useState(false);
+  const [generatedGroupId] = useState(() => uuidv4());
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -79,6 +81,7 @@ export default function UploadPage() {
     selectedColors[0]?.value || "—",
     projectName || "—",
   ].join("_");
+  const stableGroupId = groupId || generatedGroupId;
 
   const namePreview = `${groupId}_001`;
 
@@ -117,16 +120,21 @@ export default function UploadPage() {
         // 👇 Debug: Check file type
         console.log("Uploading:", file.name, "| type:", file.type);
 
-          const { uploadURL, key } = await generateUploadUrl({
-            groupId,
-            imageId: generatedName,
+          const imageId = uuidv4();
+
+          const full = await generateUploadUrl({
+            groupId: stableGroupId,
+            imageId,
             fileType: file.type,
             fileName,
-            isThumbnail: !thumbnailS3Key,
+            isThumbnail: false,
           });
-          if (!thumbnailS3Key) thumbnailS3Key = key;
 
-        await uploadToSignedUrl(uploadURL, file, file.type);
+          await uploadToSignedUrl(full.uploadURL, file, file.type);
+
+          if (typeof thumbnailS3Key !== "undefined" && !thumbnailS3Key) {
+            thumbnailS3Key = full.key;
+          }
 
         await addDoc(collection(db, "images"), {
           groupId,
@@ -140,7 +148,7 @@ export default function UploadPage() {
           projectName,
           imageName: generatedName,
           internalOnly,
-          s3Key: key,
+          s3Key: full.key,
           uploadedBy: userEmail,
           timestamp: serverTimestamp(),
         });
