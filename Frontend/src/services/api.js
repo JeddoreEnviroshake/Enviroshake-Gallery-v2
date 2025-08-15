@@ -29,16 +29,17 @@ export async function generateUploadUrl({
 export async function uploadToSignedUrl(uploadURL, fileOrBlob, contentType) {
   const res = await fetch(uploadURL, {
     method: "PUT",
-    headers: { "Content-Type": contentType },
+    headers: {
+      "Content-Type": contentType || "application/octet-stream",
+    },
     body: fileOrBlob,
   });
   if (!res.ok) {
-    throw new Error("Failed to upload to signed URL");
+    throw new Error(`Upload failed with status ${res.status}`);
   }
-  return res;
+  return true;
 }
 
-// Uploads a file to a signed URL while reporting progress via callback
 export function uploadFileWithProgress(file, uploadURL, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -47,25 +48,16 @@ export function uploadFileWithProgress(file, uploadURL, onProgress) {
       "Content-Type",
       file.type || "application/octet-stream"
     );
-
-    if (xhr.upload && typeof onProgress === "function") {
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percent = (event.loaded / event.total) * 100;
-          onProgress(percent);
-        }
-      };
-    }
-
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(xhr.response);
-      } else {
-        reject(new Error(`Upload failed with status ${xhr.status}`));
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && typeof onProgress === "function") {
+        onProgress((e.loaded / e.total) * 100);
       }
     };
+    xhr.onload = () =>
+      xhr.status >= 200 && xhr.status < 300
+        ? resolve()
+        : reject(new Error(`Upload failed: ${xhr.status}`));
     xhr.onerror = () => reject(new Error("Network error"));
-
     xhr.send(file);
   });
 }

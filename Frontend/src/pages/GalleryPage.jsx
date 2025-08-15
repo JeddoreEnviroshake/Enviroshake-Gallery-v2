@@ -32,7 +32,6 @@ import {
   imageUrlFromKey,
   uploadFileWithProgress,
 } from "../services/api";
-import { getFileExt } from "../utils/fileHelpers";
 
 const OPTIONS = {
   productLines: ["Enviroshake", "Enviroshingle", "EnviroSlate"],
@@ -108,33 +107,6 @@ const handleDownload = (activeImg) => {
   if (!url) return;
   downloadImage(url, activeImg.imageName || "image.jpg");
 };
-
-async function uploadFileWithProgress(file, uploadURL, onProgress) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("PUT", uploadURL);
-    xhr.upload.addEventListener("progress", (e) => {
-      if (e.lengthComputable && typeof onProgress === "function") {
-        onProgress((e.loaded / e.total) * 100);
-      }
-    });
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve();
-      } else {
-        reject(new Error("Upload failed"));
-      }
-    };
-    xhr.onerror = () => reject(new Error("Upload failed"));
-    xhr.setRequestHeader(
-      "Content-Type",
-      file.type || "application/octet-stream"
-    );
-    xhr.send(file);
-  });
-}
-
-
 export default function GalleryPage() {
   const [images, setImages] = useState([]);
   const [groups, setGroups] = useState({});
@@ -301,20 +273,19 @@ export default function GalleryPage() {
 
       for (let i = 0; i < files.length; ++i) {
         const file = files[i];
-        const extension = getFileExt(file.name);
         const imgNum = String(lastIdx + i + 1).padStart(3, "0");
         const baseName = groupMeta.groupName || groupId;
         const generatedName = `${baseName}_${imgNum}`;
 
-        // NEW: unique imageId for the backend contract
+        // Unique imageId for the backend contract
         const imageId = uuidv4();
 
-        // NEW: call the backend with the new payload shape
+        // Call the backend with the new payload shape
         const { uploadURL, key } = await generateUploadUrl({
           groupId,
           imageId,
           fileType: file.type || "image/jpeg",
-          fileName: `${generatedName}${extension}`,
+          fileName: file.name,
           isThumbnail: false,
         });
 
