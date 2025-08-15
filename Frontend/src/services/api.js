@@ -2,16 +2,32 @@
 
 const API_BASE = "http://localhost:4000";
 
-export async function generateUploadUrl(fileName, fileType) {
+export async function generateUploadUrl(paramsOrName, maybeType) {
+  const body =
+    typeof paramsOrName === "string"
+      ? { fileName: paramsOrName, fileType: maybeType }
+      : paramsOrName;
+
   const res = await fetch(`${API_BASE}/generate-upload-url`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fileName, fileType }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     throw new Error("Failed to generate upload URL");
   }
   return res.json();
+}
+
+export async function uploadToSignedUrl(url, file, contentType) {
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: { "Content-Type": contentType },
+    body: file,
+  });
+  if (!res.ok) {
+    throw new Error("Failed to upload file");
+  }
 }
 
 export async function downloadGroup(groupId) {

@@ -4,10 +4,53 @@ import Select from "react-select";
 import CreatableSelect from "react-select/creatable";
 import { COLOR_OPTIONS } from "../Constants/colorOptions";
 import { db, auth } from "../services/firebase";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  addDoc,
+  collection,
+  serverTimestamp,
+} from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { generateUploadUrl } from "../services/api";
-import { getFileExt } from "../utils/fileHelpers";
+import { generateUploadUrl, uploadToSignedUrl } from "../services/api";
+import { v4 as uuidv4 } from "uuid"; // run `npm i uuid` if dependency missing
+
+async function createThumbnailBlob(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const maxDim = 400;
+      let { width, height } = img;
+      if (width > height) {
+        if (width > maxDim) {
+          height *= maxDim / width;
+          width = maxDim;
+        }
+      } else if (height > maxDim) {
+        width *= maxDim / height;
+        height = maxDim;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          resolve(blob);
+        },
+        "image/jpeg",
+        0.85,
+      );
+    };
+    img.onerror = () => resolve(null);
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+function ensureId(id) {
+  return id || uuidv4();
+}
 
 const OPTIONS = {
   productLines: ["Enviroshake", "Enviroshingle", "EnviroSlate"],
@@ -38,6 +81,7 @@ export default function UploadPage() {
   const [message, setMessage] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [dragOver, setDragOver] = useState(false);
+  const [groupIdState, setGroupIdState] = useState("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -74,13 +118,13 @@ export default function UploadPage() {
     }
   };
 
-  const groupId = [
+  const groupName = [
     productLine?.value || "—",
     selectedColors[0]?.value || "—",
     projectName || "—",
   ].join("_");
 
-  const namePreview = `${groupId}_001`;
+  const namePreview = `${groupName}_001`;
 
 
   const handleSubmit = async (e) => {
@@ -104,41 +148,59 @@ export default function UploadPage() {
 
     setUploading(true);
 
-      try {
-        let uploaded = 0;
-        let thumbnailS3Key = null;
-        for (let i = 0; i < selectedFiles.length; ++i) {
-          const file = selectedFiles[i];
-          const extension = getFileExt(file.name);
-          const imgNum = (i + 1).toString().padStart(3, "0");
-          const generatedName = `${groupId}_${imgNum}`;
-          const fileName = `${generatedName}${extension}`;
+    try {
+      const stableGroupId = ensureId(groupIdState);
+      setGroupIdState(stableGroupId);
 
-        // 👇 Debug: Check file type
-        console.log("Uploading:", file.name, "| type:", file.type);
+      let uploaded = 0;
+      let groupThumbKey = null;
 
-          const { uploadURL, key } = await generateUploadUrl(
-            fileName,
-            file.type,
-          );
-          if (!thumbnailS3Key) thumbnailS3Key = key;
+      for (const file of selectedFiles) {
+        const imageId = uuidv4();
 
-        const uploadRes = await fetch(uploadURL, {
-          method: "PUT",
-          headers: { "Content-Type": file.type },
-          body: file,
+        const full = await generateUploadUrl({
+          groupId: stableGroupId,
+          imageId,
+          fileType: file.type,
+          fileName: file.name,
+          isThumbnail: false,
         });
 
-        console.log("Upload response status:", uploadRes.status);
+        await uploadToSignedUrl(full.uploadURL, file, file.type);
 
-        if (!uploadRes.ok) {
-          console.log(await uploadRes.text());
-          throw new Error("Failed to upload image");
+        let thumbKey = full.key;
+        const thumbBlob = await createThumbnailBlob(file);
+        if (thumbBlob) {
+          const thumb = await generateUploadUrl({
+            groupId: stableGroupId,
+            imageId,
+            fileType: "image/jpeg",
+            fileName: file.name,
+            isThumbnail: true,
+          });
+          await uploadToSignedUrl(thumb.uploadURL, thumbBlob, "image/jpeg");
+          thumbKey = thumb.key;
         }
 
+        if (!groupThumbKey) groupThumbKey = thumbKey;
+
         await addDoc(collection(db, "images"), {
-          groupId,
-          groupName: groupId,
+          groupId: stableGroupId,
+          imageId,
+          s3Key: full.key,
+          thumbKey,
+          uploadedBy: userEmail,
+          timestamp: serverTimestamp(),
+        });
+
+        uploaded++;
+      }
+
+      await setDoc(
+        doc(db, "imageGroups", stableGroupId),
+        {
+          groupId: stableGroupId,
+          groupName,
           colors: selectedColors.map((c) => c.value),
           productLine: productLine.value,
           roofTags: roofTags.map((r) => r.value),
@@ -146,33 +208,17 @@ export default function UploadPage() {
           countryTags: countryTags.map((c) => c.value),
           notes,
           projectName,
-          imageName: generatedName,
-          internalOnly,
-          s3Key: key,
-          uploadedBy: userEmail,
-          timestamp: serverTimestamp(),
-        });
-
-          uploaded++;
-        }
-
-        await addDoc(collection(db, "imageGroups"), {
-          groupId,
-          groupName: groupId,
-          colors: selectedColors.map((c) => c.value),
-          productLine: productLine.value,
-          roofTags: roofTags.map((r) => r.value),
-          projectTags: projectTags.map((p) => p.value),
-          countryTags: countryTags.map((c) => c.value),
-          notes,
           internalOnly,
           uploadedBy: userEmail,
-          timestamp: serverTimestamp(),
           imageCount: selectedFiles.length,
-          thumbnailS3Key: thumbnailS3Key,
-        });
+          thumbnailS3Key: groupThumbKey,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
 
-        setMessage(`✅ ${uploaded} image${uploaded > 1 ? "s" : ""} uploaded and saved!`);
+      setMessage(`✅ ${uploaded} image${uploaded > 1 ? "s" : ""} uploaded and saved!`);
       setSelectedColors([]);
       setProductLine(null);
       setRoofTags([]);
