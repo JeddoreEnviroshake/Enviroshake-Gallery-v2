@@ -29,7 +29,6 @@ import { v4 as uuidv4 } from "uuid";
 import {
   generateUploadUrl,
   downloadMultipleGroups,
-  uploadToSignedUrl,
   imageUrlFromKey,
 } from "../services/api";
 import { getFileExt } from "../utils/fileHelpers";
@@ -108,6 +107,31 @@ const handleDownload = (activeImg) => {
   if (!url) return;
   downloadImage(url, activeImg.imageName || "image.jpg");
 };
+
+async function uploadFileWithProgress(file, uploadURL, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", uploadURL);
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable && typeof onProgress === "function") {
+        onProgress((e.loaded / e.total) * 100);
+      }
+    });
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        reject(new Error("Upload failed"));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Upload failed"));
+    xhr.setRequestHeader(
+      "Content-Type",
+      file.type || "application/octet-stream"
+    );
+    xhr.send(file);
+  });
+}
 
 
 export default function GalleryPage() {
