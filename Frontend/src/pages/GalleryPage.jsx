@@ -28,6 +28,7 @@ import { StickyNote } from "lucide-react";
 import {
   generateUploadUrl,
   downloadMultipleGroups,
+  uploadToSignedUrl,
 } from "../services/api";
 import { getFileExt } from "../utils/fileHelpers";
 import { srcFromImage } from "../utils/imageUrl";
@@ -266,10 +267,13 @@ export default function GalleryPage() {
         const fileName = `${generatedName}${extension}`;
 
         const fallbackType = file.type || "image/jpeg";
-        const { uploadURL, key } = await generateUploadUrl(
+        const { uploadURL, key } = await generateUploadUrl({
+          groupId,
+          imageId: generatedName,
+          fileType: fallbackType,
           fileName,
-          fallbackType,
-        );
+          isThumbnail: false,
+        });
 
         console.log("Uploading to S3 →", {
           fileName: file.name,
@@ -277,20 +281,13 @@ export default function GalleryPage() {
           fallbackUsed: !file.type,
         });
 
-        const uploadRes = await fetch(uploadURL, {
-          method: "PUT",
-          headers: { "Content-Type": fallbackType },
-          body: file,
-        });
-        if (!uploadRes.ok) {
-          const errorText = await uploadRes.text();
-          console.error("❌ S3 upload failed:", errorText);
-          throw new Error("Upload to S3 failed");
-        } else {
+        try {
+          await uploadToSignedUrl(uploadURL, file, fallbackType);
           console.log("✅ S3 upload succeeded:", generatedName);
-          setUploadProgress(
-            Math.round(((i + 1) / files.length) * 100),
-          );
+          setUploadProgress(Math.round(((i + 1) / files.length) * 100));
+        } catch (e) {
+          console.error("❌ S3 upload failed:", e);
+          throw new Error("Upload to S3 failed");
         }
 
         await addDoc(collection(db, "images"), {

@@ -6,7 +6,7 @@ import { COLOR_OPTIONS } from "../Constants/colorOptions";
 import { db, auth } from "../services/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { generateUploadUrl } from "../services/api";
+import { generateUploadUrl, uploadToSignedUrl } from "../services/api";
 import { getFileExt } from "../utils/fileHelpers";
 
 const OPTIONS = {
@@ -117,24 +117,16 @@ export default function UploadPage() {
         // 👇 Debug: Check file type
         console.log("Uploading:", file.name, "| type:", file.type);
 
-          const { uploadURL, key } = await generateUploadUrl(
+          const { uploadURL, key } = await generateUploadUrl({
+            groupId,
+            imageId: generatedName,
+            fileType: file.type,
             fileName,
-            file.type,
-          );
+            isThumbnail: !thumbnailS3Key,
+          });
           if (!thumbnailS3Key) thumbnailS3Key = key;
 
-        const uploadRes = await fetch(uploadURL, {
-          method: "PUT",
-          headers: { "Content-Type": file.type },
-          body: file,
-        });
-
-        console.log("Upload response status:", uploadRes.status);
-
-        if (!uploadRes.ok) {
-          console.log(await uploadRes.text());
-          throw new Error("Failed to upload image");
-        }
+        await uploadToSignedUrl(uploadURL, file, file.type);
 
         await addDoc(collection(db, "images"), {
           groupId,
