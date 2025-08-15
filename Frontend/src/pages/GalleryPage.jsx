@@ -29,9 +29,9 @@ import {
   generateUploadUrl,
   downloadMultipleGroups,
   uploadToSignedUrl,
+  imageUrlFromKey,
 } from "../services/api";
 import { getFileExt } from "../utils/fileHelpers";
-import { srcFromImage } from "../utils/imageUrl";
 
 const OPTIONS = {
   productLines: ["Enviroshake", "Enviroshingle", "EnviroSlate"],
@@ -78,6 +78,16 @@ const makeOptions = (arr) => arr.map((item) => ({ label: item, value: item }));
 const formatImageName = (groupName, index) =>
   `${groupName}_${String(index + 1).padStart(3, "0")}`;
 
+function srcFromImage(img) {
+  if (!img) return "";
+  const key =
+    img.thumbKey ||
+    img.thumbnailKey ||
+    img.thumbnailS3Key ||
+    img.s3Key ||
+    "";
+  return key ? imageUrlFromKey(key) : "";
+}
 
 // Triggers a browser download using a temporary anchor element
 const downloadImage = (url, filename) => {
