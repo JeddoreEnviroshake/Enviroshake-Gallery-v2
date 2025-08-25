@@ -126,11 +126,11 @@ const downloadImage = (url, filename) => {
 };
 
 // Determines the download URL from image data and triggers the download
-const handleDownload = (activeImg) => {
+const handleDownload = async (activeImg) => {
   if (!activeImg) return;
   const url =
     activeImg.s3Url ||
-    (activeImg.s3Key ? `${BUCKET_URL}/${activeImg.s3Key}` : activeImg.url);
+    (activeImg.s3Key ? await getSignedUrlForKey(activeImg.s3Key) : activeImg.url);
   if (!url) return;
   downloadImage(url, activeImg.imageName || "image.jpg");
 };
@@ -546,9 +546,12 @@ export default function GalleryPage() {
       groupMeta = { groupName: activeImg.groupName };
     }
 
-    const url =
-      activeImg.s3Key ? `${BUCKET_URL}/${activeImg.s3Key}` : activeImg.url;
-    const modalData = { url, groupId: activeGroupId, groupImages, groupMeta };
+    const modalData = {
+      s3Key: activeImg.s3Key,
+      groupId: activeGroupId,
+      groupImages,
+      groupMeta,
+    };
     console.log("modalImage", modalData);
     setModalImage({
       ...modalData,
@@ -572,13 +575,10 @@ export default function GalleryPage() {
     const activeImg = isGroup
       ? modalImage.groupImages[modalIndex]
       : modalImage;
-    const src = activeImg.s3Key
-      ? `${BUCKET_URL}/${activeImg.s3Key}`
-      : activeImg.url;
     const overlay = (
       <div className="fullscreen-overlay">
-        <img
-          src={src}
+        <SignedImage
+          s3Key={activeImg?.s3Key}
           alt=""
           className="fullscreen-active"
           onDoubleClick={() => setIsFullscreen(false)}
@@ -1056,8 +1056,8 @@ export default function GalleryPage() {
 
                 {/* Main image */}
                 <div className="image-wrapper">
-                  <img
-                    src={`${BUCKET_URL}/${firstImage.s3Key}`}
+                  <SignedImage
+                    s3Key={groupMeta?.thumbnailKey || firstImage?.s3Key}
                     alt="Group Thumbnail"
                     className="gallery-thumbnail"
                     style={{ cursor: "pointer" }}
@@ -1194,8 +1194,8 @@ export default function GalleryPage() {
                       height: "100%",
                     }}
                   >
-                    <img
-                      src={`${BUCKET_URL}/${img.s3Key}`}
+                    <SignedImage
+                      s3Key={img?.s3Key}
                       alt=""
                       className="modal-main-image"
                       style={{
@@ -1223,9 +1223,9 @@ export default function GalleryPage() {
             </Swiper>
             <div className="thumbnail-row">
               {modalImage.groupImages.map((img, idx) => (
-                <img
+                <SignedImage
                   key={img.id}
-                  src={`${BUCKET_URL}/${img.s3Key}`}
+                  s3Key={img.s3Key}
                   alt=""
                   className={`thumbnail${modalIndex === idx ? " selected" : ""}`}
                   onClick={() => {
@@ -1321,8 +1321,8 @@ export default function GalleryPage() {
               </div>
             </div>
             <div className="single-image-container">
-              <img
-                src={modalImage.url}
+              <SignedImage
+                s3Key={modalImage?.s3Key}
                 alt=""
                 className="modal-main-image"
                 style={{ maxWidth: "100%", maxHeight: "70vh", objectFit: "contain" }}
