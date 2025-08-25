@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import {
@@ -31,7 +31,37 @@ import {
   downloadMultipleGroups,
 } from "../services/api";
 
-const BUCKET_URL = "https://enviroshake-gallery-images.s3.amazonaws.com";
+// --- Signed URL helper using backend /presign-get ---
+const signedUrlCache = new Map();
+
+async function getSignedUrlForKey(key, expiresIn = 300) {
+  if (!key) return "";
+  const cacheKey = `${key}|${expiresIn}`;
+  const cached = signedUrlCache.get(cacheKey);
+  if (cached && (Date.now() - cached.t) < 1000 * 60) {
+    return cached.url;
+  }
+  const resp = await fetch(`http://localhost:4000/presign-get?key=${encodeURIComponent(key)}&expiresIn=${expiresIn}`);
+  if (!resp.ok) return "";
+  const { url } = await resp.json();
+  signedUrlCache.set(cacheKey, { url, t: Date.now() });
+  return url;
+}
+
+// React component for rendering signed images
+function SignedImage({ s3Key, ...props }) {
+  const [url, setUrl] = React.useState("");
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!s3Key) { setUrl(""); return; }
+      const u = await getSignedUrlForKey(s3Key, 300);
+      if (!cancelled) setUrl(u);
+    })();
+    return () => { cancelled = true; };
+  }, [s3Key]);
+  return <img src={url || ""} {...props} onError={(e) => { e.currentTarget.src = ""; }} />;
+}
 
 const OPTIONS = {
   productLines: ["Enviroshake", "Enviroshingle", "EnviroSlate"],
