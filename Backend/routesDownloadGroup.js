@@ -35,24 +35,73 @@ function extFromKey(key) {
 }
 
 router.get("/:groupId", async (req, res) => {
-  const { groupId } = req.params;
+  const raw = decodeURIComponent(req.params.groupId || "");
+  const candidates = Array.from(
+    new Set([raw, raw.replace(/_/g, " "), raw.replace(/\s+/g, "_")])
+  );
 
   try {
-    console.log("🔍 Group download requested:", groupId);
+    console.log("🔍 Group download requested:", raw);
 
-    // 1) Query Firestore for images in the group
-    const snapshot = await db
-      .collection("images")
-      .where("groupId", "==", groupId)
-      .orderBy("timestamp", "asc")
-      .get();
+    // Try direct image queries for each candidate
+    let imagesSnap = null,
+      matchedId = null,
+      resolvedId = null;
+    for (const cid of candidates) {
+      const snap = await db
+        .collection("images")
+        .where("groupId", "==", cid)
+        .orderBy("timestamp", "asc")
+        .get();
+      if (!snap.empty) {
+        imagesSnap = snap;
+        matchedId = cid;
+        break;
+      }
+    }
 
-    if (snapshot.empty) {
+    // Fallback: look up imageGroups
+    if (!imagesSnap) {
+      for (const cid of candidates) {
+        let grpSnap = await db
+          .collection("imageGroups")
+          .where("groupId", "==", cid)
+          .limit(1)
+          .get();
+        if (grpSnap.empty) {
+          grpSnap = await db
+            .collection("imageGroups")
+            .where("groupName", "==", cid)
+            .limit(1)
+            .get();
+        }
+
+        if (!grpSnap.empty) {
+          resolvedId = grpSnap.docs[0].data().groupId;
+          const snap = await db
+            .collection("images")
+            .where("groupId", "==", resolvedId)
+            .orderBy("timestamp", "asc")
+            .get();
+          if (!snap.empty) {
+            imagesSnap = snap;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!imagesSnap) {
       return res.status(404).json({ message: "No images found for this group." });
     }
 
+    console.log(
+      "download-group matched groupId:",
+      matchedId || resolvedId
+    );
+
     // 2) Filter to S3-backed images under the configured prefix
-    const imageDocs = snapshot.docs.filter((d) => {
+    const imageDocs = imagesSnap.docs.filter((d) => {
       const data = d.data();
       return typeof data.s3Key === "string" && data.s3Key.startsWith(UPLOAD_PREFIX);
     });
@@ -62,19 +111,23 @@ router.get("/:groupId", async (req, res) => {
     }
 
     // 3) Resolve groupName (prefer imageGroups/<groupId>, fallback to image doc or groupId)
-    let groupName = groupId;
+    const finalId = matchedId || resolvedId;
+    let groupName = finalId;
     try {
-      const grpDoc = await db.collection("imageGroups").doc(groupId).get();
+      const grpDoc = await db.collection("imageGroups").doc(finalId).get();
       if (grpDoc.exists && grpDoc.data()?.groupName) {
         groupName = grpDoc.data().groupName;
-      } else if (snapshot.docs[0].data()?.groupName) {
-        groupName = snapshot.docs[0].data().groupName;
+      } else if (imagesSnap.docs[0].data()?.groupName) {
+        groupName = imagesSnap.docs[0].data().groupName;
       }
     } catch (e) {
       // Non-fatal — we can continue with fallback name
-      console.warn("⚠️ Could not read imageGroups doc; using fallback name.", e?.message);
-      if (snapshot.docs[0].data()?.groupName) {
-        groupName = snapshot.docs[0].data().groupName;
+      console.warn(
+        "⚠️ Could not read imageGroups doc; using fallback name.",
+        e?.message
+      );
+      if (imagesSnap.docs[0].data()?.groupName) {
+        groupName = imagesSnap.docs[0].data().groupName;
       }
     }
     groupName = safeName(groupName);
