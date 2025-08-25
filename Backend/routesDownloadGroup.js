@@ -39,28 +39,32 @@ router.get("/:groupId", async (req, res) => {
   const candidates = Array.from(
     new Set([raw, raw.replace(/_/g, " "), raw.replace(/\s+/g, "_")])
   );
+  const IMAGE_FIELDS = ["groupId", "groupID", "group", "groupName", "name"];
 
   try {
     console.log("🔍 Group download requested:", raw);
 
-    // Try direct image queries for each candidate
-    let imagesSnap = null,
-      matchedId = null,
-      resolvedId = null;
-    for (const cid of candidates) {
-      const snap = await db
-        .collection("images")
-        .where("groupId", "==", cid)
-        .orderBy("timestamp", "asc")
-        .get();
-      if (!snap.empty) {
-        imagesSnap = snap;
-        matchedId = cid;
-        break;
+    let imagesSnap = null;
+    let matched = null;
+    let resolvedId = null;
+
+    // (a) Try direct image queries
+    outer: for (const cid of candidates) {
+      for (const field of IMAGE_FIELDS) {
+        const snap = await db
+          .collection("images")
+          .where(field, "==", cid)
+          .orderBy("timestamp", "asc")
+          .get();
+        if (!snap.empty) {
+          imagesSnap = snap;
+          matched = { field, value: cid };
+          break outer;
+        }
       }
     }
 
-    // Fallback: look up imageGroups
+    // (b) Fallback via imageGroups
     if (!imagesSnap) {
       for (const cid of candidates) {
         let grpSnap = await db
@@ -75,30 +79,32 @@ router.get("/:groupId", async (req, res) => {
             .limit(1)
             .get();
         }
-
         if (!grpSnap.empty) {
-          resolvedId = grpSnap.docs[0].data().groupId;
-          const snap = await db
-            .collection("images")
-            .where("groupId", "==", resolvedId)
-            .orderBy("timestamp", "asc")
-            .get();
-          if (!snap.empty) {
-            imagesSnap = snap;
-            break;
+          resolvedId = grpSnap.docs[0].data().groupId || grpSnap.docs[0].id;
+          for (const field of IMAGE_FIELDS) {
+            const snap = await db
+              .collection("images")
+              .where(field, "==", resolvedId)
+              .orderBy("timestamp", "asc")
+              .get();
+            if (!snap.empty) {
+              imagesSnap = snap;
+              matched = { field, value: resolvedId };
+              break;
+            }
           }
+          if (imagesSnap) break;
         }
       }
     }
 
     if (!imagesSnap) {
-      return res.status(404).json({ message: "No images found for this group." });
+      return res
+        .status(404)
+        .json({ message: "No images found for this group." });
     }
 
-    console.log(
-      "download-group matched groupId:",
-      matchedId || resolvedId
-    );
+    console.log("download-group matched:", matched);
 
     // 2) Filter to S3-backed images under the configured prefix
     const imageDocs = imagesSnap.docs.filter((d) => {
@@ -111,7 +117,9 @@ router.get("/:groupId", async (req, res) => {
     }
 
     // 3) Resolve groupName (prefer imageGroups/<groupId>, fallback to image doc or groupId)
-    const finalId = matchedId || resolvedId;
+    const firstData = imagesSnap.docs[0]?.data() || {};
+    const finalId =
+      resolvedId || firstData.groupId || firstData.groupID || firstData.group || matched.value;
     let groupName = finalId;
     try {
       const grpDoc = await db.collection("imageGroups").doc(finalId).get();
