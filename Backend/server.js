@@ -3,17 +3,15 @@ require("dotenv").config({ override: true }); // ensure .env wins
 
 const express = require("express");
 const cors = require("cors");
-const {
-  PutObjectCommand,
-  DeleteObjectCommand,
-} = require("@aws-sdk/client-s3");
+const { PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
-const { db } = require("./firebaseAdmin");             // Firebase (company project)
-const { s3, bucketName } = require("./aws/s3Client");  // Shared S3 v3 client
+const admin = require("firebase-admin");            // for debug: show backend project id
+const { db } = require("./firebaseAdmin");          // Firebase (company project)
+const { s3, bucketName } = require("./aws/s3Client"); // Shared S3 v3 client
 const downloadGroupRoute = require("./routesDownloadGroup");
 const downloadMultipleGroupsRoute = require("./downloadMultipleGroups");
-const presignGetRoute = require("./routesPresignGet"); // <-- add presigned GET
+const presignGetRoute = require("./routesPresignGet"); // GET /presign-get
 
 const app = express();
 
@@ -69,6 +67,42 @@ db.collection("test-connection")
 app.get("/health", (_req, res) => {
   res.json({ ok: true, bucket: bucketName, region: process.env.AWS_REGION });
 });
+
+/**
+ * ---------------------------------------------------------------------------
+ * DEBUG ROUTES
+ * ---------------------------------------------------------------------------
+ * These help us confirm the backend Firebase project and see sample image docs.
+ */
+
+// Which Firebase project is the backend using?
+app.get("/debug/firebase", (_req, res) => {
+  try {
+    const opts = admin.app().options || {};
+    res.json({
+      adminProjectId: opts.projectId || process.env.FIREBASE_PROJECT_ID || "(unknown)",
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Peek at a couple of docs in the `images` collection
+app.get("/debug/images", async (_req, res) => {
+  try {
+    const snap = await db.collection("images").limit(5).get();
+    const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    res.json(docs);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/**
+ * ---------------------------------------------------------------------------
+ * APP ROUTES
+ * ---------------------------------------------------------------------------
+ */
 
 // ---- Generate presigned S3 upload URL ----
 app.post("/generate-upload-url", async (req, res) => {

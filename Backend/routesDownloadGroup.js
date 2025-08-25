@@ -13,6 +13,9 @@ const router = express.Router();
 const RAW_PREFIX = process.env.S3_UPLOAD_PREFIX || "uploads/";
 const UPLOAD_PREFIX = RAW_PREFIX.endsWith("/") ? RAW_PREFIX : `${RAW_PREFIX}/`;
 
+// Accept both our historical prefixes ("uploads/" and "images/")
+const ACCEPT_PREFIXES = Array.from(new Set([UPLOAD_PREFIX, "images/"]));
+
 // --- helpers ---------------------------------------------------------------
 
 // Basic filename sanitization for zip entries
@@ -30,6 +33,14 @@ function extFromKey(key) {
     if (ext.length <= 10) return ext;
   }
   return "jpg";
+}
+
+function s3KeyEligible(k) {
+  return (
+    typeof k === "string" &&
+    !/^https?:\/\//i.test(k) &&               // exclude absolute external URLs
+    ACCEPT_PREFIXES.some((p) => k.startsWith(p))
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -112,8 +123,7 @@ router.get("/:groupId", async (req, res) => {
         const snap = await db
           .collection("images")
           .where(field, "==", cid)
-          .orderBy("timestamp", "asc")
-          .get();
+          .get(); // ← removed .orderBy("timestamp", "asc")
         if (!snap.empty) {
           imagesSnap = snap;
           matched = { field, value: cid };
@@ -143,8 +153,7 @@ router.get("/:groupId", async (req, res) => {
             const snap = await db
               .collection("images")
               .where(field, "==", resolvedId)
-              .orderBy("timestamp", "asc")
-              .get();
+              .get(); // ← removed .orderBy("timestamp", "asc")
             if (!snap.empty) {
               imagesSnap = snap;
               matched = { field, value: resolvedId };
@@ -164,10 +173,10 @@ router.get("/:groupId", async (req, res) => {
 
     console.log("download-group matched:", matched);
 
-    // 2) Filter to S3-backed images under the configured prefix
+    // 2) Filter to S3-backed images (allow "uploads/" and "images/")
     const imageDocs = imagesSnap.docs.filter((d) => {
-      const data = d.data();
-      return typeof data.s3Key === "string" && data.s3Key.startsWith(UPLOAD_PREFIX);
+      const { s3Key } = d.data() || {};
+      return s3KeyEligible(s3Key);
     });
 
     if (imageDocs.length === 0) {
@@ -249,7 +258,7 @@ router.get("/:groupId", async (req, res) => {
       const { s3Key } = doc.data();
 
       // Skip keys that no longer match expectations
-      if (typeof s3Key !== "string" || !s3Key.startsWith(UPLOAD_PREFIX)) {
+      if (!s3KeyEligible(s3Key)) {
         console.warn("⚠️ Skipping non-S3 or unexpected key:", s3Key);
         continue;
       }
