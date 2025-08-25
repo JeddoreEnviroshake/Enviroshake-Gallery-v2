@@ -2,20 +2,18 @@
 const express = require("express");
 const archiver = require("archiver");
 const { PassThrough } = require("stream");
-const {
-  GetObjectCommand,
-  HeadObjectCommand,
-} = require("@aws-sdk/client-s3");
+const { GetObjectCommand, HeadObjectCommand } = require("@aws-sdk/client-s3");
 
-const { db } = require("./firebaseAdmin");           // Firestore (company project)
-const { s3, bucketName } = require("./aws/s3Client"); // Shared S3 v3 client
+const { db } = require("./firebaseAdmin");            // Firestore
+const { s3, bucketName } = require("./aws/s3Client"); // S3 v3 client
 
 const router = express.Router();
 
-// Optional: set in .env (defaults to "uploads/")
-// e.g., S3_UPLOAD_PREFIX=images/
+// Optional: set in .env (defaults to "uploads/"), e.g. S3_UPLOAD_PREFIX=images/
 const RAW_PREFIX = process.env.S3_UPLOAD_PREFIX || "uploads/";
 const UPLOAD_PREFIX = RAW_PREFIX.endsWith("/") ? RAW_PREFIX : `${RAW_PREFIX}/`;
+
+// --- helpers ---------------------------------------------------------------
 
 // Basic filename sanitization for zip entries
 function safeName(str) {
@@ -34,6 +32,66 @@ function extFromKey(key) {
   return "jpg";
 }
 
+// ---------------------------------------------------------------------------
+// DEBUG ROUTE: Inspect how Firestore matches your group identifier.
+// GET /download-group/debug/:groupId
+router.get("/debug/:groupId", async (req, res) => {
+  try {
+    const raw = decodeURIComponent(req.params.groupId || "");
+    const candidates = Array.from(
+      new Set([
+        raw,
+        raw.replace(/_/g, " "),
+        raw.replace(/\s+/g, "_"),
+        raw.replace(/[\s_]+/g, ""), // collapsed
+      ])
+    );
+
+    const IMAGE_FIELDS = ["groupId", "groupID", "group", "groupName", "name"];
+
+    const imageFieldCounts = [];
+    for (const cid of candidates) {
+      const row = { candidate: cid, counts: {} };
+      for (const f of IMAGE_FIELDS) {
+        const snap = await db.collection("images").where(f, "==", cid).get();
+        row.counts[f] = snap.size;
+      }
+      imageFieldCounts.push(row);
+    }
+
+    const imageGroupsMatches = [];
+    for (const cid of candidates) {
+      let g = await db
+        .collection("imageGroups")
+        .where("groupId", "==", cid)
+        .limit(1)
+        .get();
+      if (g.empty) {
+        g = await db
+          .collection("imageGroups")
+          .where("groupName", "==", cid)
+          .limit(1)
+          .get();
+      }
+      if (!g.empty) {
+        const d = g.docs[0].data() || {};
+        imageGroupsMatches.push({
+          matchedOn: cid,
+          groupId: d.groupId ?? g.docs[0].id,
+          groupName: d.groupName,
+        });
+      }
+    }
+
+    res.json({ candidates, imageFieldCounts, imageGroupsMatches });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// MAIN ROUTE: Build and stream a ZIP of all images in a group.
+// GET /download-group/:groupId
 router.get("/:groupId", async (req, res) => {
   const raw = decodeURIComponent(req.params.groupId || "");
   const candidates = Array.from(
@@ -48,7 +106,7 @@ router.get("/:groupId", async (req, res) => {
     let matched = null;
     let resolvedId = null;
 
-    // (a) Try direct image queries
+    // (a) Try direct image queries across multiple fields/candidates
     outer: for (const cid of candidates) {
       for (const field of IMAGE_FIELDS) {
         const snap = await db
@@ -64,7 +122,7 @@ router.get("/:groupId", async (req, res) => {
       }
     }
 
-    // (b) Fallback via imageGroups
+    // (b) Fallback via imageGroups to resolve a canonical groupId, then re-query images
     if (!imagesSnap) {
       for (const cid of candidates) {
         let grpSnap = await db
@@ -129,11 +187,8 @@ router.get("/:groupId", async (req, res) => {
         groupName = imagesSnap.docs[0].data().groupName;
       }
     } catch (e) {
-      // Non-fatal — we can continue with fallback name
-      console.warn(
-        "⚠️ Could not read imageGroups doc; using fallback name.",
-        e?.message
-      );
+      // Non-fatal — continue with fallback name
+      console.warn("⚠️ Could not read imageGroups doc; using fallback name.", e?.message);
       if (imagesSnap.docs[0].data()?.groupName) {
         groupName = imagesSnap.docs[0].data().groupName;
       }
@@ -181,7 +236,6 @@ router.get("/:groupId", async (req, res) => {
 
     archive.on("error", (err) => {
       console.error("❌ Archiver error:", err);
-      // If headers weren't sent yet, try to send a 500; otherwise just end the stream
       if (!res.headersSent) res.status(500).send("Archive error.");
       try { res.end(); } catch (_) {}
     });
@@ -224,10 +278,8 @@ router.get("/:groupId", async (req, res) => {
     }
 
     if (fileIndex === 0) {
-      // Nothing was successfully added; abort and end.
       console.warn("⚠️ No files were successfully added to the archive.");
       archive.abort();
-      // Can't change status code at this point reliably; end the response.
       try { res.end(); } catch (_) {}
       return;
     }
