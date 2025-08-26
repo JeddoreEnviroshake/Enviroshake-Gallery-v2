@@ -129,6 +129,27 @@ async function unionDocsForCandidates(cands) {
   return Array.from(map.values());
 }
 
+async function getGroupDocsByCandidates(cands) {
+  const hits = [];
+  for (const cid of cands) {
+    // 1) try direct doc id
+    try {
+      const byId = await db.collection("imageGroups").doc(cid).get();
+      if (byId.exists) hits.push(byId);
+    } catch {}
+
+    // 2) try fields (groupId / groupName)
+    try {
+      let snap = await db.collection("imageGroups").where("groupId", "==", cid).limit(1).get();
+      if (snap.empty) {
+        snap = await db.collection("imageGroups").where("groupName", "==", cid).limit(1).get();
+      }
+      if (!snap.empty) hits.push(snap.docs[0]);
+    } catch {}
+  }
+  return hits;
+}
+
 function sortImageDocs(docs) {
   return docs.slice().sort((a, b) => {
     const da = a.data() || {};
@@ -151,16 +172,8 @@ router.get("/check/:groupId", async (req, res) => {
     let docs = await unionDocsForCandidates(candidates);
 
     // Also try imageGroups matches to pull subcollection docs (even if they lack groupId fields)
-    const canonicalIds = new Set();
-    for (const cid of candidates) {
-      try {
-        let g = await db.collection("imageGroups").where("groupId", "==", cid).limit(1).get();
-        if (g.empty) {
-          g = await db.collection("imageGroups").where("groupName", "==", cid).limit(1).get();
-        }
-        if (!g.empty) canonicalIds.add(g.docs[0].data()?.groupId || g.docs[0].id);
-      } catch {}
-    }
+    const groupDocs = await getGroupDocsByCandidates(candidates);
+    const canonicalIds = new Set(groupDocs.map((d) => d.data()?.groupId || d.id));
     for (const gid of canonicalIds) {
       try {
         const sub = await db.collection("imageGroups").doc(gid).collection("images").get();
@@ -220,16 +233,8 @@ router.get("/:groupId", async (req, res) => {
     let imageDocs = await unionDocsForCandidates(candidates);
 
     // 2) Resolve possible canonical groupId via imageGroups, and also load its subcollection images
-    const canonicalIds = new Set();
-    for (const cid of candidates) {
-      try {
-        let g = await db.collection("imageGroups").where("groupId", "==", cid).limit(1).get();
-        if (g.empty) {
-          g = await db.collection("imageGroups").where("groupName", "==", cid).limit(1).get();
-        }
-        if (!g.empty) canonicalIds.add(g.docs[0].data()?.groupId || g.docs[0].id);
-      } catch {}
-    }
+    const groupDocs = await getGroupDocsByCandidates(candidates);
+    const canonicalIds = new Set(groupDocs.map((d) => d.data()?.groupId || d.id));
     for (const gid of canonicalIds) {
       try {
         const sub = await db.collection("imageGroups").doc(gid).collection("images").get();
@@ -255,12 +260,18 @@ router.get("/:groupId", async (req, res) => {
 
     // 5) Derive a friendly group name
     const first = imageDocs[0].data() || {};
-    const groupIdCandidate = first.groupId ?? first.groupID ?? first.group ?? [...canonicalIds][0] ?? raw;
+    const groupIdCandidate =
+      first.groupId ?? first.groupID ?? first.group ?? [...canonicalIds][0] ?? raw;
     let groupName = first.groupName || groupIdCandidate;
-    try {
-      const grpDoc = await db.collection("imageGroups").doc(groupIdCandidate).get();
-      if (grpDoc.exists && grpDoc.data()?.groupName) groupName = grpDoc.data().groupName;
-    } catch {}
+    if (groupDocs.length) {
+      const gd = groupDocs[0].data() || {};
+      groupName = gd.groupName || groupName;
+    } else {
+      try {
+        const grpDoc = await db.collection("imageGroups").doc(groupIdCandidate).get();
+        if (grpDoc.exists && grpDoc.data()?.groupName) groupName = grpDoc.data().groupName;
+      } catch {}
+    }
     groupName = safeName(groupName);
 
     // 6) Ensure bucket and preflight at least one object
