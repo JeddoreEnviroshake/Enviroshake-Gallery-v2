@@ -67,6 +67,14 @@ function s3KeyEligible(k) {
   return wasUrl ? true : ACCEPT_PREFIXES.some((p) => key.startsWith(p));
 }
 
+function normalizeId(str) {
+  return String(str || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[\s_]+/g, "_")
+    .replace(/[^a-z0-9_]/g, "");
+}
+
 // Generate candidate strings for matching group ids/names robustly
 function makeCandidates(raw) {
   const base = String(raw || "").trim();
@@ -85,7 +93,15 @@ function makeCandidates(raw) {
     compact(stripTrailingCounter(s)),
   ]);
 
-  return Array.from(new Set([...seeds, ...stripped].filter(Boolean)));
+  const all = [...seeds, ...stripped].filter(Boolean);
+  const map = new Map();
+  for (const s of all) {
+    const n = normalizeId(s);
+    if (!n) continue;
+    if (!map.has(n)) map.set(n, s);
+  }
+  const out = new Set([...map.values(), ...map.keys()]);
+  return Array.from(out);
 }
 
 // fetch docs where a field == value from both top-level images and any subcollection named "images"
