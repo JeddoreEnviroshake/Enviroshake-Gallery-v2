@@ -27,7 +27,6 @@ import { FaTrashAlt, FaLock, FaDownload } from "react-icons/fa";
 import { StickyNote } from "lucide-react";
 import {
   generateUploadUrl,
-  downloadGroup,
   downloadMultipleGroups,
 } from "../services/api";
 
@@ -456,17 +455,25 @@ export default function GalleryPage() {
   // Download handlers
 
   const handleDownloadGroup = async (groupId) => {
+    const base = import.meta.env.VITE_API_BASE_URL;
+    const url = `${base}/download-group/${encodeURIComponent(groupId)}`;
     try {
-      const blob = await downloadGroup(groupId);
-      const url = window.URL.createObjectURL(blob);
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || "Failed to download ZIP");
+      }
+      const blob = await res.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = url;
+      link.href = objectUrl;
       link.download = `${groupId}.zip`;
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch {
+      window.URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      console.error(err);
       alert("Failed to download ZIP");
     }
   };
