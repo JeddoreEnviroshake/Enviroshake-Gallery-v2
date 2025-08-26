@@ -15,6 +15,10 @@ const ACCEPT_PREFIXES = Array.from(new Set([UPLOAD_PREFIX, "images/"]));
 
 const IMAGE_FIELDS = ["groupId", "groupID", "group", "groupName", "name"]; // common variations seen in historical data
 
+function ciIncludes(hay, needle) {
+  return String(hay || "").toLowerCase().includes(String(needle || "").toLowerCase());
+}
+
 /* ------------------------------ helpers ------------------------------ */
 function safeName(str) {
   return String(str).replace(/[\\/:*?"<>|]/g, "_").trim() || "file";
@@ -261,6 +265,38 @@ router.get("/debug/:groupId", async (req, res) => {
 });
 
 /* ------------------------------- ZIP route ------------------------------ */
+// GET /download-group/find?q=...
+router.get("/find", async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+    if (!q) return res.status(400).json({ error: "missing q" });
+
+    const snap = await db.collection("images").limit(500).get(); // small scan for dev
+    const hits = [];
+    for (const doc of snap.docs) {
+      const data = doc.data() || {};
+      for (const f of IMAGE_FIELDS) {
+        if (ciIncludes(data[f], q)) {
+          hits.push({
+            id: doc.id,
+            matchedField: f,
+            groupId: data.groupId ?? data.groupID ?? data.group ?? null,
+            groupName: data.groupName ?? null,
+            name: data.name ?? null,
+            s3Key: data.s3Key ?? null,
+            timestamp: data.timestamp ?? null,
+          });
+          break;
+        }
+      }
+      if (hits.length >= 25) break;
+    }
+    res.json({ q, count: hits.length, hits });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // GET /download-group/:groupId
 router.get("/:groupId", async (req, res) => {
   const raw0 = decodeURIComponent(req.params.groupId || "");
