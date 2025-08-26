@@ -72,14 +72,23 @@ function s3KeyEligible(k) {
 }
 
 function makeCandidates(raw) {
-  return Array.from(
-    new Set([
-      raw,
-      raw.replace(/_/g, " "),
-      raw.replace(/\s+/g, "_"),
-      raw.replace(/[\s_]+/g, ""),
-    ])
-  );
+  const base = String(raw || "").trim();
+  const plusToSpace = base.replace(/\+/g, " ");
+
+  const stripTrailingCounter = (s) => s.replace(/([ _-])\d{1,4}$/, ""); // "_001", "-02", " 7"
+  const toUnderscore = (s) => s.replace(/\s+/g, "_");
+  const toSpace = (s) => s.replace(/_/g, " ");
+  const compact = (s) => s.replace(/[\s_]+/g, "");
+
+  const seeds = [base, plusToSpace, toSpace(base), toUnderscore(base), compact(base)];
+  const stripped = seeds.flatMap((s) => [
+    stripTrailingCounter(s),
+    toSpace(stripTrailingCounter(s)),
+    toUnderscore(stripTrailingCounter(s)),
+    compact(stripTrailingCounter(s)),
+  ]);
+
+  return Array.from(new Set([...seeds, ...stripped].filter(Boolean)));
 }
 
 // fetch docs where a field == value from both top-level images and any subcollection named "images"
