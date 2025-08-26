@@ -246,15 +246,21 @@ router.get("/:groupId", async (req, res) => {
 
   try {
     console.log("🔍 Group download requested:", raw);
+    console.log("🔎 Candidates to check:", candidates);
 
     let imageDocs = await unionDocsForCandidates(candidates);
+    console.log("🧮 Docs found before dedupe:", imageDocs.length);
+
     imageDocs = dedupeByNormalizedKey(imageDocs);
+    console.log("🧮 Docs after dedupe:", imageDocs.length);
 
     if (imageDocs.length === 0) {
       return res.status(404).json({ message: "No images found for this group." });
     }
 
     imageDocs = imageDocs.filter((d) => s3KeyEligible((d.data() || {}).s3Key));
+    console.log("🧮 Docs after S3-eligibility filter:", imageDocs.length);
+
     if (imageDocs.length === 0) {
       return res.status(404).json({ message: "No downloadable files for this group." });
     }
@@ -348,6 +354,28 @@ router.get("/:groupId", async (req, res) => {
     console.error("❌ Error in download group route:", err);
     if (!res.headersSent) res.status(500).json({ message: "Failed to download group ZIP." });
     else try { res.end(); } catch {}
+  }
+});
+
+// TEMP DEBUG: returns what the server *would* find for a groupId
+router.get("/debug/:groupId", async (req, res) => {
+  const raw0 = decodeURIComponent(req.params.groupId || "");
+  const raw = raw0.trim();
+  const candidates = makeCandidates(raw);
+  try {
+    let imageDocs = await unionDocsForCandidates(candidates);
+    const before = imageDocs.length;
+    imageDocs = dedupeByNormalizedKey(imageDocs);
+    const after = imageDocs.length;
+    const elig = imageDocs.filter((d) => s3KeyEligible((d.data() || {}).s3Key));
+    res.json({
+      raw,
+      candidates,
+      counts: { before, after, eligible: elig.length },
+      samples: elig.slice(0, 5).map((d) => ({ id: d.id, ...d.data() })),
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message, raw, candidates });
   }
 });
 
