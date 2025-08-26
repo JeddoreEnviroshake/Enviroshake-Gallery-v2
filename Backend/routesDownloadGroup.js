@@ -1,4 +1,3 @@
-// Backend/routesDownloadGroup.js
 const express = require("express");
 const archiver = require("archiver");
 const { PassThrough } = require("stream");
@@ -14,7 +13,7 @@ const RAW_PREFIX = process.env.S3_UPLOAD_PREFIX || "uploads/";
 const UPLOAD_PREFIX = RAW_PREFIX.endsWith("/") ? RAW_PREFIX : `${RAW_PREFIX}/`;
 const ACCEPT_PREFIXES = Array.from(new Set([UPLOAD_PREFIX, "images/"]));
 
-const IMAGE_FIELDS = ["groupId", "groupID", "group", "groupName", "name"];
+const IMAGE_FIELDS = ["groupId", "groupID", "group", "groupName", "name"]; // common variations seen in historical data
 
 /* ------------------------------ helpers ------------------------------ */
 function safeName(str) {
@@ -40,20 +39,13 @@ function normalizeS3Key(k) {
     try {
       const u = new URL(k);
       const host = (u.host || "").toLowerCase();
-      const isAmazon =
-        host.includes(".s3.") ||
-        host === "s3.amazonaws.com" ||
-        host.startsWith("s3.");
+      const isAmazon = host.includes(".s3.") || host === "s3.amazonaws.com" || host.startsWith("s3.");
       if (!isAmazon) return null; // not our S3
 
       let path = (u.pathname || "/").trim();
       path = path.startsWith("/") ? path.slice(1) : path;
       const parts = path.split("/");
-      if (
-        parts[0] &&
-        bucketName &&
-        parts[0].toLowerCase() === bucketName.toLowerCase()
-      ) {
+      if (parts[0] && bucketName && parts[0].toLowerCase() === bucketName.toLowerCase()) {
         parts.shift(); // strip "<bucket>/"
       }
       return parts.join("/");
@@ -71,16 +63,25 @@ function s3KeyEligible(k) {
   return wasUrl ? true : ACCEPT_PREFIXES.some((p) => key.startsWith(p));
 }
 
+// Generate candidate strings for matching group ids/names robustly
 function makeCandidates(raw) {
   const base = String(raw || "").trim();
-  return Array.from(
-    new Set([
-      base,
-      base.replace(/_/g, " "),
-      base.replace(/\s+/g, "_"),
-      base.replace(/[\s_]+/g, ""),
-    ])
-  ).filter(Boolean);
+  const plusToSpace = base.replace(/\+/g, " ");
+
+  const stripTrailingCounter = (s) => s.replace(/([ _-])\d{1,4}$/, ""); // "_001", "-02", " 7"
+  const toUnderscore = (s) => s.replace(/\s+/g, "_");
+  const toSpace = (s) => s.replace(/_/g, " ");
+  const compact = (s) => s.replace(/[\s_]+/g, "");
+
+  const seeds = [base, plusToSpace, toSpace(base), toUnderscore(base), compact(base)];
+  const stripped = seeds.flatMap((s) => [
+    stripTrailingCounter(s),
+    toSpace(stripTrailingCounter(s)),
+    toUnderscore(stripTrailingCounter(s)),
+    compact(stripTrailingCounter(s)),
+  ]);
+
+  return Array.from(new Set([...seeds, ...stripped].filter(Boolean)));
 }
 
 // fetch docs where a field == value from both top-level images and any subcollection named "images"
@@ -109,13 +110,24 @@ async function unionDocsForValue(value) {
   return Array.from(map.values());
 }
 
-// PLUS: read all images under imageGroups/{doc}/images when group doc matches
+// Get imageGroups by id or matching fields; we'll also use them to read subcollection images
 async function getGroupDocsByCandidates(cands) {
   const hits = [];
   for (const cid of cands) {
-    let snap = await db.collection("imageGroups").where("groupId", "==", cid).limit(1).get();
-   if (snap.empty) snap = await db.collection("imageGroups").where("groupName", "==", cid).limit(1).get();
-    if (!snap.empty) hits.push(snap.docs[0]);
+    // 1) try direct doc id
+    try {
+      const byId = await db.collection("imageGroups").doc(cid).get();
+      if (byId.exists) hits.push(byId);
+    } catch {}
+
+    // 2) try fields (groupId / groupName)
+    try {
+      let snap = await db.collection("imageGroups").where("groupId", "==", cid).limit(1).get();
+      if (snap.empty) {
+        snap = await db.collection("imageGroups").where("groupName", "==", cid).limit(1).get();
+      }
+      if (!snap.empty) hits.push(snap.docs[0]);
+    } catch {}
   }
   return hits;
 }
@@ -249,13 +261,22 @@ router.get("/:groupId", async (req, res) => {
 
     imageDocs = sortImageDocs(imageDocs);
 
+    // Resolve a nice groupName for the ZIP
     const first = imageDocs[0].data() || {};
-    const groupIdCandidate = first.groupId ?? first.groupID ?? first.group ?? raw;
+    const groupDocs = await getGroupDocsByCandidates(candidates);
+    const canonicalIds = new Set(groupDocs.map((d) => d.data()?.groupId || d.id));
+
+    const groupIdCandidate = first.groupId ?? first.groupID ?? first.group ?? [...canonicalIds][0] ?? raw;
     let groupName = first.groupName || groupIdCandidate;
-    try {
-      const grpDoc = await db.collection("imageGroups").doc(groupIdCandidate).get();
-      if (grpDoc.exists && grpDoc.data()?.groupName) groupName = grpDoc.data().groupName;
-    } catch {}
+    if (groupDocs.length) {
+      const gd = groupDocs[0].data() || {};
+      groupName = gd.groupName || groupName;
+    } else {
+      try {
+        const grpDoc = await db.collection("imageGroups").doc(groupIdCandidate).get();
+        if (grpDoc.exists && grpDoc.data()?.groupName) groupName = grpDoc.data().groupName;
+      } catch {}
+    }
     groupName = safeName(groupName);
 
     if (!bucketName) {
@@ -277,7 +298,7 @@ router.get("/:groupId", async (req, res) => {
     }
 
     // ZIP headers
-   const filename = `${groupName}.zip`;
+    const filename = `${groupName}.zip`;
     res.setHeader("Content-Type", "application/zip");
     res.setHeader(
       "Content-Disposition",
