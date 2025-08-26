@@ -77,7 +77,10 @@ function makeCandidates(raw) {
   const toSpace = (s) => s.replace(/_/g, " ");
   const compact = (s) => s.replace(/[\s_]+/g, "");
 
-  const seeds = [base, plusToSpace, toSpace(base), toUnderscore(base), compact(base)];
+  let seeds = [base, plusToSpace, toSpace(base), toUnderscore(base), compact(base)];
+  seeds = seeds.flatMap((s) => [s, s.toLowerCase()]);
+  seeds = seeds.flatMap((s) => [s, toSpace(s), toUnderscore(s)]);
+
   const stripped = seeds.flatMap((s) => [
     stripTrailingCounter(s),
     toSpace(stripTrailingCounter(s)),
@@ -85,7 +88,7 @@ function makeCandidates(raw) {
     compact(stripTrailingCounter(s)),
   ]);
 
-  return Array.from(new Set([...seeds, ...stripped].filter(Boolean)));
+  return new Set([...seeds, ...stripped].filter(Boolean));
 }
 
 // fetch docs where a field == value from both top-level images and any subcollection named "images"
@@ -255,12 +258,12 @@ router.get("/debug/:groupId", async (req, res) => {
     const elig = imageDocs.filter((d) => s3KeyEligible((d.data() || {}).s3Key));
     res.json({
       raw,
-      candidates,
+      candidates: Array.from(candidates),
       counts: { before, after, eligible: elig.length },
       samples: elig.slice(0, 5).map((d) => ({ id: d.id, ...d.data() })),
     });
   } catch (e) {
-    res.status(500).json({ error: e.message, raw, candidates });
+    res.status(500).json({ error: e.message, raw, candidates: Array.from(candidates) });
   }
 });
 
