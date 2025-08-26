@@ -4,305 +4,325 @@ const archiver = require("archiver");
 const { PassThrough } = require("stream");
 const { GetObjectCommand, HeadObjectCommand } = require("@aws-sdk/client-s3");
 
-const { db } = require("./firebaseAdmin");            // Firestore
-const { s3, bucketName } = require("./aws/s3Client"); // S3 v3 client
+const { db } = require("./firebaseAdmin");
+const { s3, bucketName } = require("./aws/s3Client");
 
 const router = express.Router();
 
-// Optional: set in .env (defaults to "uploads/"), e.g. S3_UPLOAD_PREFIX=images/
+// Optional: S3_UPLOAD_PREFIX=images/ (defaults to uploads/)
 const RAW_PREFIX = process.env.S3_UPLOAD_PREFIX || "uploads/";
 const UPLOAD_PREFIX = RAW_PREFIX.endsWith("/") ? RAW_PREFIX : `${RAW_PREFIX}/`;
-
-// Accept both our historical prefixes ("uploads/" and "images/")
 const ACCEPT_PREFIXES = Array.from(new Set([UPLOAD_PREFIX, "images/"]));
 
-// --- helpers ---------------------------------------------------------------
+const IMAGE_FIELDS = ["groupId", "groupID", "group", "groupName", "name"];
 
-// Basic filename sanitization for zip entries
+// ---------- helpers ----------
 function safeName(str) {
   return String(str).replace(/[\\/:*?"<>|]/g, "_").trim() || "file";
 }
 
-// Derive file extension from an S3 key, fallback to jpg
 function extFromKey(key) {
-  const last = key.split("/").pop() || "";
-  const idx = last.lastIndexOf(".");
-  if (idx > -1 && idx < last.length - 1) {
-    const ext = last.slice(idx + 1).toLowerCase();
-    // Guard against absurdly long "extensions"
+  const last = (key || "").split("/").pop() || "";
+  const i = last.lastIndexOf(".");
+  if (i > -1 && i < last.length - 1) {
+    const ext = last.slice(i + 1).toLowerCase();
     if (ext.length <= 10) return ext;
   }
   return "jpg";
 }
 
+// Accept raw keys and full S3 URLs; return a normalized key
+function normalizeS3Key(k) {
+  if (!k || typeof k !== "string") return null;
+  k = k.trim(); // removes stray \n, spaces, etc.
+
+  if (/^https?:\/\//i.test(k)) {
+    try {
+      const u = new URL(k);
+      const host = (u.host || "").toLowerCase();
+      const isAmazon =
+        host.includes(".s3.") ||
+        host === "s3.amazonaws.com" ||
+        host.startsWith("s3.");
+      if (!isAmazon) return null; // not our S3
+
+      let path = (u.pathname || "/").trim();
+      path = path.startsWith("/") ? path.slice(1) : path;
+      const parts = path.split("/");
+      if (
+        parts[0] &&
+        bucketName &&
+        parts[0].toLowerCase() === bucketName.toLowerCase()
+      ) {
+        parts.shift(); // strip "<bucket>/"
+      }
+      return parts.join("/");
+    } catch {
+      return null;
+    }
+  }
+  return k;
+}
+
 function s3KeyEligible(k) {
-  return (
-    typeof k === "string" &&
-    !/^https?:\/\//i.test(k) &&               // exclude absolute external URLs
-    ACCEPT_PREFIXES.some((p) => k.startsWith(p))
+  const key = normalizeS3Key(k);
+  if (!key) return false;
+  const wasUrl = /^https?:\/\//i.test(String(k));
+  return wasUrl ? true : ACCEPT_PREFIXES.some((p) => key.startsWith(p));
+}
+
+function makeCandidates(raw) {
+  return Array.from(
+    new Set([
+      raw,
+      raw.replace(/_/g, " "),
+      raw.replace(/\s+/g, "_"),
+      raw.replace(/[\s_]+/g, ""),
+    ])
   );
 }
 
-// ---------------------------------------------------------------------------
-// DEBUG ROUTE: Inspect how Firestore matches your group identifier.
-// GET /download-group/debug/:groupId
-router.get("/debug/:groupId", async (req, res) => {
+// fetch docs where a field == value from both top-level images and any subcollection named "images"
+async function queryImagesByFieldAndValue(field, value) {
+  const out = [];
   try {
-    const raw = decodeURIComponent(req.params.groupId || "");
-    const candidates = Array.from(
-      new Set([
-        raw,
-        raw.replace(/_/g, " "),
-        raw.replace(/\s+/g, "_"),
-        raw.replace(/[\s_]+/g, ""), // collapsed
-      ])
-    );
+    const snap = await db.collection("images").where(field, "==", value).get();
+    out.push(...snap.docs);
+  } catch {}
+  try {
+    const cg = await db.collectionGroup("images").where(field, "==", value).get();
+    out.push(...cg.docs);
+  } catch {}
+  return out;
+}
 
-    const IMAGE_FIELDS = ["groupId", "groupID", "group", "groupName", "name"];
+async function unionDocsForValue(value) {
+  const map = new Map(); // key: doc.ref.path
+  for (const f of IMAGE_FIELDS) {
+    const docs = await queryImagesByFieldAndValue(f, value);
+    for (const d of docs) {
+      const key = d.ref?.path || d.id;
+      if (!map.has(key)) map.set(key, d);
+    }
+  }
+  return Array.from(map.values());
+}
 
-    const imageFieldCounts = [];
+async function unionDocsForCandidates(cands) {
+  const map = new Map();
+  for (const c of cands) {
+    const docs = await unionDocsForValue(c);
+    for (const d of docs) {
+      const key = d.ref?.path || d.id;
+      if (!map.has(key)) map.set(key, d);
+    }
+  }
+  return Array.from(map.values());
+}
+
+function sortImageDocs(docs) {
+  return docs.slice().sort((a, b) => {
+    const da = a.data() || {};
+    const dbb = b.data() || {};
+    const ta = da.timestamp?.seconds ?? da.timestamp?._seconds ?? 0;
+    const tb = dbb.timestamp?.seconds ?? dbb.timestamp?._seconds ?? 0;
+    if (ta !== tb) return ta - tb;
+    const ka = (da.s3Key || "").toString();
+    const kb = (dbb.s3Key || "").toString();
+    if (ka !== kb) return ka.localeCompare(kb);
+    return (a.ref?.path || a.id).localeCompare(b.ref?.path || b.id);
+  });
+}
+
+// ---------- diagnostics (keep; super useful) ----------
+router.get("/check/:groupId", async (req, res) => {
+  try {
+    const raw = decodeURIComponent(req.params.groupId || "").trim();
+    const candidates = makeCandidates(raw);
+    let docs = await unionDocsForCandidates(candidates);
+
+    // Also try imageGroups matches to pull subcollection docs (even if they lack groupId fields)
+    const canonicalIds = new Set();
     for (const cid of candidates) {
-      const row = { candidate: cid, counts: {} };
-      for (const f of IMAGE_FIELDS) {
-        const snap = await db.collection("images").where(f, "==", cid).get();
-        row.counts[f] = snap.size;
-      }
-      imageFieldCounts.push(row);
+      try {
+        let g = await db.collection("imageGroups").where("groupId", "==", cid).limit(1).get();
+        if (g.empty) {
+          g = await db.collection("imageGroups").where("groupName", "==", cid).limit(1).get();
+        }
+        if (!g.empty) canonicalIds.add(g.docs[0].data()?.groupId || g.docs[0].id);
+      } catch {}
+    }
+    for (const gid of canonicalIds) {
+      try {
+        const sub = await db.collection("imageGroups").doc(gid).collection("images").get();
+        for (const d of sub.docs) {
+          const key = d.ref?.path || d.id;
+          if (!docs.find(x => (x.ref?.path || x.id) === key)) docs.push(d);
+        }
+      } catch {}
     }
 
-    const imageGroupsMatches = [];
-    for (const cid of candidates) {
-      let g = await db
-        .collection("imageGroups")
-        .where("groupId", "==", cid)
-        .limit(1)
-        .get();
-      if (g.empty) {
-        g = await db
-          .collection("imageGroups")
-          .where("groupName", "==", cid)
-          .limit(1)
-          .get();
-      }
-      if (!g.empty) {
-        const d = g.docs[0].data() || {};
-        imageGroupsMatches.push({
-          matchedOn: cid,
-          groupId: d.groupId ?? g.docs[0].id,
-          groupName: d.groupName,
-        });
-      }
-    }
+    if (docs.length === 0) return res.json({ ok: false, reason: "no images matched" });
 
-    res.json({ candidates, imageFieldCounts, imageGroupsMatches });
+    const results = [];
+    for (const d of docs) {
+      const data = d.data() || {};
+      const rawKey = data.s3Key ?? null;
+      const key = normalizeS3Key(rawKey);
+      let exists = false, contentLength = null, err = null;
+      if (key) {
+        try {
+          const head = await s3.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }));
+          exists = true;
+          contentLength = head.ContentLength ?? null;
+        } catch (e) {
+          err = e?.name || e?.message || String(e);
+        }
+      } else {
+        err = "invalid/empty/non-S3 key";
+      }
+      results.push({
+        path: d.ref?.path || d.id,
+        groupId: data.groupId ?? data.groupID ?? data.group ?? null,
+        groupName: data.groupName ?? null,
+        s3Key: rawKey,
+        normalizedKey: key,
+        exists,
+        contentLength,
+        err,
+      });
+    }
+    res.json({ ok: true, bucket: bucketName, count: results.length, results });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 
-// ---------------------------------------------------------------------------
-// MAIN ROUTE: Build and stream a ZIP of all images in a group.
-// GET /download-group/:groupId
+// ---------- main ZIP route ----------
 router.get("/:groupId", async (req, res) => {
-  const raw = decodeURIComponent(req.params.groupId || "");
-  const candidates = Array.from(
-    new Set([raw, raw.replace(/_/g, " "), raw.replace(/\s+/g, "_")])
-  );
-  const IMAGE_FIELDS = ["groupId", "groupID", "group", "groupName", "name"];
+  const raw0 = decodeURIComponent(req.params.groupId || "");
+  const raw = raw0.trim();
+  const candidates = makeCandidates(raw);
 
   try {
     console.log("🔍 Group download requested:", raw);
 
-    let imagesSnap = null;
-    let matched = null;
-    let resolvedId = null;
+    // 1) Gather matching docs by fields across top-level & subcollections
+    let imageDocs = await unionDocsForCandidates(candidates);
 
-    // (a) Try direct image queries across multiple fields/candidates
-    outer: for (const cid of candidates) {
-      for (const field of IMAGE_FIELDS) {
-        const snap = await db
-          .collection("images")
-          .where(field, "==", cid)
-          .get(); // ← removed .orderBy("timestamp", "asc")
-        if (!snap.empty) {
-          imagesSnap = snap;
-          matched = { field, value: cid };
-          break outer;
+    // 2) Resolve possible canonical groupId via imageGroups, and also load its subcollection images
+    const canonicalIds = new Set();
+    for (const cid of candidates) {
+      try {
+        let g = await db.collection("imageGroups").where("groupId", "==", cid).limit(1).get();
+        if (g.empty) {
+          g = await db.collection("imageGroups").where("groupName", "==", cid).limit(1).get();
         }
-      }
+        if (!g.empty) canonicalIds.add(g.docs[0].data()?.groupId || g.docs[0].id);
+      } catch {}
+    }
+    for (const gid of canonicalIds) {
+      try {
+        const sub = await db.collection("imageGroups").doc(gid).collection("images").get();
+        for (const d of sub.docs) {
+          const key = d.ref?.path || d.id;
+          if (!imageDocs.find(x => (x.ref?.path || x.id) === key)) imageDocs.push(d);
+        }
+      } catch {}
     }
 
-    // (b) Fallback via imageGroups to resolve a canonical groupId, then re-query images
-    if (!imagesSnap) {
-      for (const cid of candidates) {
-        let grpSnap = await db
-          .collection("imageGroups")
-          .where("groupId", "==", cid)
-          .limit(1)
-          .get();
-        if (grpSnap.empty) {
-          grpSnap = await db
-            .collection("imageGroups")
-            .where("groupName", "==", cid)
-            .limit(1)
-            .get();
-        }
-        if (!grpSnap.empty) {
-          resolvedId = grpSnap.docs[0].data().groupId || grpSnap.docs[0].id;
-          for (const field of IMAGE_FIELDS) {
-            const snap = await db
-              .collection("images")
-              .where(field, "==", resolvedId)
-              .get(); // ← removed .orderBy("timestamp", "asc")
-            if (!snap.empty) {
-              imagesSnap = snap;
-              matched = { field, value: resolvedId };
-              break;
-            }
-          }
-          if (imagesSnap) break;
-        }
-      }
+    if (imageDocs.length === 0) {
+      return res.status(404).json({ message: "No images found for this group." });
     }
 
-    if (!imagesSnap) {
-      return res
-        .status(404)
-        .json({ message: "No images found for this group." });
-    }
-
-    console.log("download-group matched:", matched);
-
-    // 2) Filter to S3-backed images (allow "uploads/" and "images/")
-    const imageDocs = imagesSnap.docs.filter((d) => {
-      const { s3Key } = d.data() || {};
-      return s3KeyEligible(s3Key);
-    });
-
+    // 3) Keep only S3-backed docs
+    imageDocs = imageDocs.filter((d) => s3KeyEligible((d.data() || {}).s3Key));
     if (imageDocs.length === 0) {
       return res.status(404).json({ message: "No downloadable files for this group." });
     }
 
-    // 3) Resolve groupName (prefer imageGroups/<groupId>, fallback to image doc or groupId)
-    const firstData = imagesSnap.docs[0]?.data() || {};
-    const finalId =
-      resolvedId || firstData.groupId || firstData.groupID || firstData.group || matched.value;
-    let groupName = finalId;
+    // 4) Deterministic ordering
+    imageDocs = sortImageDocs(imageDocs);
+
+    // 5) Derive a friendly group name
+    const first = imageDocs[0].data() || {};
+    const groupIdCandidate = first.groupId ?? first.groupID ?? first.group ?? [...canonicalIds][0] ?? raw;
+    let groupName = first.groupName || groupIdCandidate;
     try {
-      const grpDoc = await db.collection("imageGroups").doc(finalId).get();
-      if (grpDoc.exists && grpDoc.data()?.groupName) {
-        groupName = grpDoc.data().groupName;
-      } else if (imagesSnap.docs[0].data()?.groupName) {
-        groupName = imagesSnap.docs[0].data().groupName;
-      }
-    } catch (e) {
-      // Non-fatal — continue with fallback name
-      console.warn("⚠️ Could not read imageGroups doc; using fallback name.", e?.message);
-      if (imagesSnap.docs[0].data()?.groupName) {
-        groupName = imagesSnap.docs[0].data().groupName;
-      }
-    }
+      const grpDoc = await db.collection("imageGroups").doc(groupIdCandidate).get();
+      if (grpDoc.exists && grpDoc.data()?.groupName) groupName = grpDoc.data().groupName;
+    } catch {}
     groupName = safeName(groupName);
 
-    // 4) Ensure bucket configured
+    // 6) Ensure bucket and preflight at least one object
     if (!bucketName) {
       return res.status(500).json({ message: "AWS_S3_BUCKET is not defined in .env" });
     }
-
-    // 5) Prefetch check: ensure at least one S3 object exists before sending headers
-    let hasAtLeastOneObject = false;
-    for (const doc of imageDocs) {
-      const { s3Key } = doc.data();
+    let ok = false;
+    for (const d of imageDocs) {
+      const key = normalizeS3Key((d.data() || {}).s3Key);
+      if (!key) continue;
       try {
-        await s3.send(new HeadObjectCommand({ Bucket: bucketName, Key: s3Key }));
-        hasAtLeastOneObject = true;
-        break;
-      } catch {
-        // Keep scanning; object might have been deleted
-      }
+        await s3.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }));
+        ok = true; break;
+      } catch {}
     }
-
-    if (!hasAtLeastOneObject) {
+    if (!ok) {
       return res.status(404).json({ message: "No downloadable files for this group." });
     }
 
-    // 6) Prepare ZIP response (send headers AFTER preflight success)
-    res.setHeader("Content-Type", "application/zip");
-    // Add RFC 5987 filename* to better support special characters
+    // 7) ZIP headers
     const filename = `${groupName}.zip`;
+    res.setHeader("Content-Type", "application/zip");
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="${safeName(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`
     );
 
     const archive = archiver("zip", { zlib: { level: 9 } });
-
-    // Clean abort if client disconnects
-    req.on("aborted", () => {
-      console.warn("⚠️ Client aborted download; aborting archive.");
-      archive.abort();
-    });
-
+    req.on("aborted", () => { console.warn("⚠️ Client aborted download."); archive.abort(); });
     archive.on("error", (err) => {
       console.error("❌ Archiver error:", err);
       if (!res.headersSent) res.status(500).send("Archive error.");
-      try { res.end(); } catch (_) {}
+      try { res.end(); } catch {}
     });
-
     archive.on("finish", () => console.log("✅ Archive stream finished."));
     archive.pipe(res);
 
-    // 7) Stream each S3 object into the ZIP
+    // 8) Stream each S3 object
     let fileIndex = 0;
-    for (const doc of imageDocs) {
-      const { s3Key } = doc.data();
-
-      // Skip keys that no longer match expectations
-      if (!s3KeyEligible(s3Key)) {
-        console.warn("⚠️ Skipping non-S3 or unexpected key:", s3Key);
-        continue;
-      }
-
-      const ext = extFromKey(s3Key);
-      const padded = String(++fileIndex).padStart(3, "0");
-      const nameInZip = `${groupName}/${groupName}_${padded}.${ext}`;
+    for (const d of imageDocs) {
+      const data = d.data() || {};
+      const key = normalizeS3Key(data.s3Key);
+      if (!key) { console.warn("⚠️ Skipping invalid/non-S3 key:", data.s3Key); continue; }
 
       try {
-        const obj = await s3.send(new GetObjectCommand({ Bucket: bucketName, Key: s3Key }));
-        if (!obj.Body) {
-          console.warn("⚠️ Empty S3 body for key:", s3Key);
-          continue;
-        }
+        const obj = await s3.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
+        if (!obj.Body) { console.warn("⚠️ Empty S3 body for:", key); continue; }
 
-        // Stream S3 object into the zip
+        const nameInZip = `${groupName}/${groupName}_${String(++fileIndex).padStart(3, "0")}.${extFromKey(key)}`;
         const passthrough = new PassThrough();
         obj.Body.pipe(passthrough);
         archive.append(passthrough, { name: nameInZip });
-
-        console.log("✅ Added to archive:", s3Key, "→", nameInZip);
+        console.log("🧩 Added to archive:", key, "→", nameInZip);
       } catch (err) {
-        console.error(`❌ S3 fetch failed for key: ${s3Key}`, err?.message || err);
-        // Continue with the rest
+        console.error("❌ S3 fetch failed:", key, err?.message || err);
       }
     }
 
     if (fileIndex === 0) {
-      console.warn("⚠️ No files were successfully added to the archive.");
+      console.warn("⚠️ Nothing was added to the archive.");
       archive.abort();
-      try { res.end(); } catch (_) {}
+      try { res.end(); } catch {}
       return;
     }
 
-    // 8) Finalize ZIP
     await archive.finalize();
     console.log("✅ Archive finalized and sent.");
   } catch (err) {
     console.error("❌ Error in download group route:", err);
-    if (!res.headersSent) {
-      res.status(500).json({ message: "Failed to download group ZIP." });
-    } else {
-      try { res.end(); } catch (_) {}
-    }
+    if (!res.headersSent) res.status(500).json({ message: "Failed to download group ZIP." });
+    else try { res.end(); } catch {}
   }
 });
 
