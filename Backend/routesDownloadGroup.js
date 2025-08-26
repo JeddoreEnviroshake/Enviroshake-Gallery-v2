@@ -16,7 +16,7 @@ const ACCEPT_PREFIXES = Array.from(new Set([UPLOAD_PREFIX, "images/"]));
 
 const IMAGE_FIELDS = ["groupId", "groupID", "group", "groupName", "name"];
 
-// ---------- helpers ----------
+/* ------------------------------ helpers ------------------------------ */
 function safeName(str) {
   return String(str).replace(/[\\/:*?"<>|]/g, "_").trim() || "file";
 }
@@ -72,14 +72,15 @@ function s3KeyEligible(k) {
 }
 
 function makeCandidates(raw) {
+  const base = String(raw || "").trim();
   return Array.from(
     new Set([
-      raw,
-      raw.replace(/_/g, " "),
-      raw.replace(/\s+/g, "_"),
-      raw.replace(/[\s_]+/g, ""),
+      base,
+      base.replace(/_/g, " "),
+      base.replace(/\s+/g, "_"),
+      base.replace(/[\s_]+/g, ""),
     ])
-  );
+  ).filter(Boolean);
 }
 
 // fetch docs where a field == value from both top-level images and any subcollection named "images"
@@ -108,14 +109,49 @@ async function unionDocsForValue(value) {
   return Array.from(map.values());
 }
 
+// PLUS: read all images under imageGroups/{doc}/images when group doc matches
+async function getGroupDocsByCandidates(cands) {
+  const hits = [];
+  for (const cid of cands) {
+    let snap = await db.collection("imageGroups").where("groupId", "==", cid).limit(1).get();
+   if (snap.empty) snap = await db.collection("imageGroups").where("groupName", "==", cid).limit(1).get();
+    if (!snap.empty) hits.push(snap.docs[0]);
+  }
+  return hits;
+}
+
+async function readSubcollectionImages(groupDoc) {
+  const ref = db.collection("imageGroups").doc(groupDoc.id).collection("images");
+  const snap = await ref.get();
+  return snap.docs;
+}
+
+function dedupeByNormalizedKey(docs) {
+  const out = [];
+  const seen = new Set();
+  for (const d of docs) {
+    const data = d.data() || {};
+    const nk = normalizeS3Key(data.s3Key);
+    const key = nk || `path:${d.ref.path}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(d);
+  }
+  return out;
+}
+
 async function unionDocsForCandidates(cands) {
   const map = new Map();
+  // 1) Top-level images (and any subcollections where field==value)
   for (const c of cands) {
     const docs = await unionDocsForValue(c);
-    for (const d of docs) {
-      const key = d.ref?.path || d.id;
-      if (!map.has(key)) map.set(key, d);
-    }
+    for (const d of docs) if (!map.has(d.ref.path)) map.set(d.ref.path, d);
+  }
+  // 2) PLUS: images subcollection under matched imageGroups (no field filter)
+  const groups = await getGroupDocsByCandidates(cands);
+  for (const g of groups) {
+    const sub = await readSubcollectionImages(g);
+    for (const d of sub) if (!map.has(d.ref.path)) map.set(d.ref.path, d);
   }
   return Array.from(map.values());
 }
@@ -134,33 +170,16 @@ function sortImageDocs(docs) {
   });
 }
 
-// ---------- diagnostics (keep; super useful) ----------
+/* ----------------------------- diagnostics ----------------------------- */
+// GET /download-group/check/:groupId
 router.get("/check/:groupId", async (req, res) => {
   try {
     const raw = decodeURIComponent(req.params.groupId || "").trim();
     const candidates = makeCandidates(raw);
-    let docs = await unionDocsForCandidates(candidates);
 
-    // Also try imageGroups matches to pull subcollection docs (even if they lack groupId fields)
-    const canonicalIds = new Set();
-    for (const cid of candidates) {
-      try {
-        let g = await db.collection("imageGroups").where("groupId", "==", cid).limit(1).get();
-        if (g.empty) {
-          g = await db.collection("imageGroups").where("groupName", "==", cid).limit(1).get();
-        }
-        if (!g.empty) canonicalIds.add(g.docs[0].data()?.groupId || g.docs[0].id);
-      } catch {}
-    }
-    for (const gid of canonicalIds) {
-      try {
-        const sub = await db.collection("imageGroups").doc(gid).collection("images").get();
-        for (const d of sub.docs) {
-          const key = d.ref?.path || d.id;
-          if (!docs.find(x => (x.ref?.path || x.id) === key)) docs.push(d);
-        }
-      } catch {}
-    }
+    let docs = await unionDocsForCandidates(candidates);
+    const before = docs.length;
+    docs = dedupeByNormalizedKey(docs);
 
     if (docs.length === 0) return res.json({ ok: false, reason: "no images matched" });
 
@@ -169,8 +188,9 @@ router.get("/check/:groupId", async (req, res) => {
       const data = d.data() || {};
       const rawKey = data.s3Key ?? null;
       const key = normalizeS3Key(rawKey);
+      const eligible = s3KeyEligible(rawKey);
       let exists = false, contentLength = null, err = null;
-      if (key) {
+      if (key && eligible) {
         try {
           const head = await s3.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }));
           exists = true;
@@ -179,26 +199,34 @@ router.get("/check/:groupId", async (req, res) => {
           err = e?.name || e?.message || String(e);
         }
       } else {
-        err = "invalid/empty/non-S3 key";
+        err = key ? "ineligible key (filtered by prefix or non-s3)" : "invalid/empty/non-S3 key";
       }
       results.push({
-        path: d.ref?.path || d.id,
+        path: d.ref.path,
         groupId: data.groupId ?? data.groupID ?? data.group ?? null,
         groupName: data.groupName ?? null,
         s3Key: rawKey,
         normalizedKey: key,
+        eligible,
         exists,
         contentLength,
         err,
       });
     }
-    res.json({ ok: true, bucket: bucketName, count: results.length, results });
+    res.json({
+      ok: true,
+      bucket: bucketName,
+      foundBeforeDedupe: before,
+      count: results.length,
+      results,
+    });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
 
-// ---------- main ZIP route ----------
+/* ------------------------------- ZIP route ------------------------------ */
+// GET /download-group/:groupId
 router.get("/:groupId", async (req, res) => {
   const raw0 = decodeURIComponent(req.params.groupId || "");
   const raw = raw0.trim();
@@ -207,46 +235,22 @@ router.get("/:groupId", async (req, res) => {
   try {
     console.log("🔍 Group download requested:", raw);
 
-    // 1) Gather matching docs by fields across top-level & subcollections
     let imageDocs = await unionDocsForCandidates(candidates);
-
-    // 2) Resolve possible canonical groupId via imageGroups, and also load its subcollection images
-    const canonicalIds = new Set();
-    for (const cid of candidates) {
-      try {
-        let g = await db.collection("imageGroups").where("groupId", "==", cid).limit(1).get();
-        if (g.empty) {
-          g = await db.collection("imageGroups").where("groupName", "==", cid).limit(1).get();
-        }
-        if (!g.empty) canonicalIds.add(g.docs[0].data()?.groupId || g.docs[0].id);
-      } catch {}
-    }
-    for (const gid of canonicalIds) {
-      try {
-        const sub = await db.collection("imageGroups").doc(gid).collection("images").get();
-        for (const d of sub.docs) {
-          const key = d.ref?.path || d.id;
-          if (!imageDocs.find(x => (x.ref?.path || x.id) === key)) imageDocs.push(d);
-        }
-      } catch {}
-    }
+    imageDocs = dedupeByNormalizedKey(imageDocs);
 
     if (imageDocs.length === 0) {
       return res.status(404).json({ message: "No images found for this group." });
     }
 
-    // 3) Keep only S3-backed docs
     imageDocs = imageDocs.filter((d) => s3KeyEligible((d.data() || {}).s3Key));
     if (imageDocs.length === 0) {
       return res.status(404).json({ message: "No downloadable files for this group." });
     }
 
-    // 4) Deterministic ordering
     imageDocs = sortImageDocs(imageDocs);
 
-    // 5) Derive a friendly group name
     const first = imageDocs[0].data() || {};
-    const groupIdCandidate = first.groupId ?? first.groupID ?? first.group ?? [...canonicalIds][0] ?? raw;
+    const groupIdCandidate = first.groupId ?? first.groupID ?? first.group ?? raw;
     let groupName = first.groupName || groupIdCandidate;
     try {
       const grpDoc = await db.collection("imageGroups").doc(groupIdCandidate).get();
@@ -254,10 +258,11 @@ router.get("/:groupId", async (req, res) => {
     } catch {}
     groupName = safeName(groupName);
 
-    // 6) Ensure bucket and preflight at least one object
     if (!bucketName) {
       return res.status(500).json({ message: "AWS_S3_BUCKET is not defined in .env" });
     }
+
+    // preflight: ensure at least one object exists
     let ok = false;
     for (const d of imageDocs) {
       const key = normalizeS3Key((d.data() || {}).s3Key);
@@ -271,8 +276,8 @@ router.get("/:groupId", async (req, res) => {
       return res.status(404).json({ message: "No downloadable files for this group." });
     }
 
-    // 7) ZIP headers
-    const filename = `${groupName}.zip`;
+    // ZIP headers
+   const filename = `${groupName}.zip`;
     res.setHeader("Content-Type", "application/zip");
     res.setHeader(
       "Content-Disposition",
@@ -289,7 +294,6 @@ router.get("/:groupId", async (req, res) => {
     archive.on("finish", () => console.log("✅ Archive stream finished."));
     archive.pipe(res);
 
-    // 8) Stream each S3 object
     let fileIndex = 0;
     for (const d of imageDocs) {
       const data = d.data() || {};
