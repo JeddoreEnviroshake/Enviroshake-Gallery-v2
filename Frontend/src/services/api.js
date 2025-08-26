@@ -1,56 +1,22 @@
-// src/services/api.js
-
-const API_BASE = "http://localhost:4000"; // Update this if deployed elsewhere
-
-export async function generateUploadUrl(fileName, fileType) {
-  const res = await fetch(`${API_BASE}/generate-upload-url`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fileName, fileType }), // ✅ fixed from "filename"
-  });
-  if (!res.ok) {
-    throw new Error("Failed to generate upload URL");
-  }
-  return res.json();
-}
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export async function downloadGroup(groupId) {
-  const res = await fetch(`${API_BASE}/download-group/${encodeURIComponent(groupId)}`);
+  if (!groupId) throw new Error("Missing groupId");
+  const url = `${API_BASE}/download-group/${encodeURIComponent(groupId)}`;
+
+  const res = await fetch(url, { method: "GET", credentials: "include" });
+
   if (!res.ok) {
-    throw new Error("Failed to fetch ZIP");
+    const txt = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status} – ${txt || "request failed"}`);
   }
-  return res.blob();
-}
 
-export async function downloadMultipleGroups(groupIds) {
-  const res = await fetch(`${API_BASE}/download-multiple-groups`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ groupIds }),
-  });
-  if (!res.ok) {
-    throw new Error("Failed to generate ZIP");
+  const ctype = res.headers.get("content-type") || "";
+  if (!ctype.includes("application/zip")) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`Expected application/zip, got ${ctype}. ${txt}`);
   }
-  return res.blob();
+
+  return await res.blob();
 }
 
-export async function fetchImageGroups() {
-  const res = await fetch(`${API_BASE}/image-groups`);
-  if (!res.ok) throw new Error("Failed to fetch image groups");
-  return await res.json();
-}
-
-export async function fetchImagesByGroup(groupId) {
-  const res = await fetch(`${API_BASE}/images/${groupId}`);
-  if (!res.ok) throw new Error("Failed to fetch images");
-  return await res.json();
-}
-
-export async function uploadImages({ formData }) {
-  const res = await fetch(`${API_BASE}/upload`, {
-    method: "POST",
-    body: formData,
-  });
-  if (!res.ok) throw new Error("Image upload failed");
-  return res.json();
-}
