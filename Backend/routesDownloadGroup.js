@@ -43,6 +43,62 @@ function s3KeyEligible(k) {
   );
 }
 
+// Generate candidate group identifiers from raw input
+function makeCandidates(raw) {
+  const base = String(raw || "").trim();
+  return Array.from(
+    new Set([
+      base,
+      base.replace(/_/g, " "),
+      base.replace(/\s+/g, "_"),
+      base.replace(/[\s_]+/g, ""),
+    ])
+  ).filter(Boolean);
+}
+
+// Normalize S3 key by stripping protocol/domain and leading slashes
+function normalizeS3Key(k) {
+  if (typeof k !== "string") return null;
+  let key = k.trim();
+  if (!key) return null;
+  if (/^https?:\/\//i.test(key)) {
+    try {
+      key = new URL(key).pathname || "";
+    } catch (_) {
+      /* noop */
+    }
+  }
+  key = key.replace(/^\/+/, "");
+  return key || null;
+}
+
+// Dedupe Firestore docs by normalized S3 key or path
+function dedupeByNormalizedKey(docs) {
+  const seen = new Map();
+  for (const d of docs) {
+    const data = d.data() || {};
+    const key = normalizeS3Key(data.s3Key);
+    const mapKey = key || d.ref.path;
+    if (!seen.has(mapKey)) {
+      seen.set(mapKey, d);
+    }
+  }
+  return Array.from(seen.values());
+}
+
+// Query images for multiple candidate identifiers across common fields
+async function unionDocsForCandidates(candidates) {
+  const IMAGE_FIELDS = ["groupId", "groupID", "group", "groupName", "name"];
+  const docs = [];
+  for (const cid of candidates) {
+    for (const f of IMAGE_FIELDS) {
+      const snap = await db.collection("images").where(f, "==", cid).get();
+      docs.push(...snap.docs);
+    }
+  }
+  return docs;
+}
+
 // ---------------------------------------------------------------------------
 // DEBUG ROUTE: Inspect how Firestore matches your group identifier.
 // GET /download-group/debug/:groupId
@@ -97,6 +153,71 @@ router.get("/debug/:groupId", async (req, res) => {
     res.json({ candidates, imageFieldCounts, imageGroupsMatches });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// CHECK ROUTE: Verify group image availability and S3 keys
+// GET /download-group/check/:groupId
+router.get("/check/:groupId", async (req, res) => {
+  try {
+    const raw = decodeURIComponent(req.params.groupId || "").trim();
+    const candidates = makeCandidates(raw);
+
+    let docs = await unionDocsForCandidates(candidates);
+    const before = docs.length;
+
+    // Deduplicate by normalized key or path
+    docs = dedupeByNormalizedKey(docs);
+
+    if (docs.length === 0) {
+      return res.json({ ok: false, reason: "no images matched" });
+    }
+
+    const results = [];
+    for (const d of docs) {
+      const data = d.data() || {};
+      const rawKey = data.s3Key ?? null;
+      const key = normalizeS3Key(rawKey);
+      const eligible = s3KeyEligible(rawKey); // NEW: would ZIP include this?
+
+      let exists = false, contentLength = null, err = null;
+
+      if (key && eligible) {
+        try {
+          const head = await s3.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }));
+          exists = true;
+          contentLength = head.ContentLength ?? null;
+        } catch (e) {
+          err = e?.name || e?.message || String(e);
+        }
+      } else {
+        // Explain why it would be skipped
+        err = key ? "ineligible key (filtered by prefix or non-s3)" : "invalid/empty/non-S3 key";
+      }
+
+      results.push({
+        path: d.ref.path,
+        groupId: data.groupId ?? data.groupID ?? data.group ?? null,
+        groupName: data.groupName ?? null,
+        s3Key: rawKey,
+        normalizedKey: key,
+        eligible,        // NEW
+        exists,
+        contentLength,
+        err,
+      });
+    }
+
+    res.json({
+      ok: true,
+      bucket: bucketName,
+      foundBeforeDedupe: before,
+      count: results.length,
+      results,
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 
