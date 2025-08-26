@@ -237,6 +237,29 @@ router.get("/check/:groupId", async (req, res) => {
   }
 });
 
+/* ------------------------------- DEBUG (temporary) ------------------------------ */
+// GET /download-group/debug/:groupId
+router.get("/debug/:groupId", async (req, res) => {
+  const raw0 = decodeURIComponent(req.params.groupId || "");
+  const raw = raw0.trim();
+  const candidates = makeCandidates(raw);
+  try {
+    let imageDocs = await unionDocsForCandidates(candidates);
+    const before = imageDocs.length;
+    imageDocs = dedupeByNormalizedKey(imageDocs);
+    const after = imageDocs.length;
+    const elig = imageDocs.filter((d) => s3KeyEligible((d.data() || {}).s3Key));
+    res.json({
+      raw,
+      candidates,
+      counts: { before, after, eligible: elig.length },
+      samples: elig.slice(0, 5).map((d) => ({ id: d.id, ...d.data() })),
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message, raw, candidates });
+  }
+});
+
 /* ------------------------------- ZIP route ------------------------------ */
 // GET /download-group/:groupId
 router.get("/:groupId", async (req, res) => {
@@ -354,28 +377,6 @@ router.get("/:groupId", async (req, res) => {
     console.error("❌ Error in download group route:", err);
     if (!res.headersSent) res.status(500).json({ message: "Failed to download group ZIP." });
     else try { res.end(); } catch {}
-  }
-});
-
-// TEMP DEBUG: returns what the server *would* find for a groupId
-router.get("/debug/:groupId", async (req, res) => {
-  const raw0 = decodeURIComponent(req.params.groupId || "");
-  const raw = raw0.trim();
-  const candidates = makeCandidates(raw);
-  try {
-    let imageDocs = await unionDocsForCandidates(candidates);
-    const before = imageDocs.length;
-    imageDocs = dedupeByNormalizedKey(imageDocs);
-    const after = imageDocs.length;
-    const elig = imageDocs.filter((d) => s3KeyEligible((d.data() || {}).s3Key));
-    res.json({
-      raw,
-      candidates,
-      counts: { before, after, eligible: elig.length },
-      samples: elig.slice(0, 5).map((d) => ({ id: d.id, ...d.data() })),
-    });
-  } catch (e) {
-    res.status(500).json({ error: e.message, raw, candidates });
   }
 });
 
