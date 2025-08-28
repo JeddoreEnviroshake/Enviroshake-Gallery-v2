@@ -302,8 +302,11 @@ router.get("/find", async (req, res) => {
 
 // GET /download-group/:groupId
 router.get("/:groupId", async (req, res) => {
-  const raw0 = decodeURIComponent(req.params.groupId || "");
-  const raw = raw0.trim();
+  const groupIdRaw = req.params.groupId;
+  const groupId = decodeURIComponent(groupIdRaw);
+  console.log('[download-group] raw param:', groupIdRaw);
+  console.log('[download-group] decoded:', groupId);
+  const raw = groupId.trim();
   const candidates = makeCandidates(raw);
 
   try {
@@ -311,6 +314,8 @@ router.get("/:groupId", async (req, res) => {
     console.log("🔎 Candidates to check:", candidates);
 
     let imageDocs = await unionDocsForCandidates(candidates);
+    console.log('[download-group] images found:', Array.isArray(imageDocs) ? imageDocs.length : 'not-array');
+    console.log('[download-group] sample:', Array.isArray(imageDocs) ? imageDocs.slice(0, 3) : imageDocs);
     console.log("🧮 Docs found before dedupe:", imageDocs.length);
 
     imageDocs = dedupeByNormalizedKey(imageDocs);
