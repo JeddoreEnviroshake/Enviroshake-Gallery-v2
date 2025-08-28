@@ -3,7 +3,7 @@ const archiver = require("archiver");
 const { PassThrough } = require("stream");
 const { GetObjectCommand, HeadObjectCommand } = require("@aws-sdk/client-s3");
 
-const { db } = require("./firebaseAdmin");
+const { db, admin } = require("./firebaseAdmin");
 const { s3, bucketName } = require("./aws/s3Client");
 
 const router = express.Router();
@@ -304,6 +304,20 @@ router.get("/find", async (req, res) => {
 router.get("/:groupId", async (req, res) => {
   const groupIdRaw = req.params.groupId;
   const groupId = decodeURIComponent(groupIdRaw);
+  try {
+    const probeSnap = await admin.firestore()
+      .collection('images')
+      .where('groupId', '==', groupId)
+      .limit(5)
+      .get();
+    console.log('[download-group][probe] images where groupId ==', groupId, ' -> count:', probeSnap.size);
+    if (!probeSnap.empty) {
+      console.log('[download-group][probe] sample doc ids:', probeSnap.docs.slice(0,3).map(d => d.id));
+      console.log('[download-group][probe] sample data[0]:', probeSnap.docs[0].data());
+    }
+  } catch (e) {
+    console.log('[download-group][probe] error:', e && e.message ? e.message : e);
+  }
   console.log('[download-group] raw param:', groupIdRaw);
   console.log('[download-group] decoded:', groupId);
   const raw = groupId.trim();
