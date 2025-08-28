@@ -972,6 +972,7 @@ export default function GalleryPage() {
             const groupImages = grouped[groupId];
             const firstImage = groupImages[0];
             const groupMeta = groups[groupId];
+            const group = groupMeta || { groupId };
             const isGroup = groupImages.length > 1 || groupMeta;
             const internalOnly = isInternalOnly(groupMeta, firstImage);
             const groupName =
@@ -1019,7 +1020,7 @@ export default function GalleryPage() {
                   {/* Download Center */}
                   <div style={{ display: "flex", justifyContent: "center" }}>
                     <button
-                      onClick={() => handleDownloadGroup(groupId)}
+                      onClick={() => handleDownloadGroup(group.groupId)}
                       className={`download-btn ${
                         internalOnly ? "disabled" : ""
                       }`}
