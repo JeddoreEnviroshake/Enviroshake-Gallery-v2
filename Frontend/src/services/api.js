@@ -76,3 +76,21 @@ export async function downloadGroup(groupId) {
   return res.blob();
 }
 
+export async function generateUploadUrl({ groupId, filename, contentType }) {
+  if (!filename) {
+    throw new Error("Missing filename");
+  }
+  const url = `${API_BASE}/generate-upload-url`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ groupId, filename, contentType }),
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status} – ${txt || "request failed"}`);
+  }
+  return await res.json();
+}
+

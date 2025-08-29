@@ -23,6 +23,9 @@ const OPTIONS = {
   countries: ["Canada", "USA", "Caribbean", "Other"],
 };
 
+const toSafeGroupId = (str = "") =>
+  str.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9_-]/g, "");
+
 export default function UploadPage() {
   const [selectedColors, setSelectedColors] = useState([]);
   const [productLine, setProductLine] = useState(null);
@@ -76,7 +79,7 @@ export default function UploadPage() {
   const groupId = [
     productLine?.value || "—",
     selectedColors[0]?.value || "—",
-    projectName || "—",
+    toSafeGroupId(projectName) || "—",
   ].join("_");
 
   const namePreview = `${groupId}_001`;
@@ -107,11 +110,12 @@ export default function UploadPage() {
     }
 
     setUploading(true);
+    const effectiveGroupId = groupId || toSafeGroupId(projectName);
 
     try {
       await addDoc(collection(db, "imageGroups"), {
-        groupId,
-        groupName: groupId,
+        groupId: effectiveGroupId,
+        groupName: effectiveGroupId,
         colors: selectedColors.map((c) => c.value),
         productLine: productLine.value,
         roofTags: roofTags.map((r) => r.value),
@@ -129,32 +133,38 @@ export default function UploadPage() {
         const file = selectedFiles[i];
         const extension = getFileExt(file.name);
         const imgNum = (i + 1).toString().padStart(3, "0");
-        const generatedName = `${groupId}_${imgNum}`;
+        const generatedName = `${effectiveGroupId}_${imgNum}`;
 
-        // 👇 Debug: Check file type
-        console.log("Uploading:", file.name, "| type:", file.type);
+        console.debug("Presign request", {
+          groupId: effectiveGroupId,
+          filename: `${generatedName}${extension}`,
+          contentType: file.type,
+        });
 
-        const { uploadURL, key } = await generateUploadUrl(
-          `${generatedName}${extension}`,
-          file.type,
-        );
+        const { uploadURL, key } = await generateUploadUrl({
+          groupId: effectiveGroupId,
+          filename: `${generatedName}${extension}`,
+          contentType: file.type,
+        });
 
         const uploadRes = await fetch(uploadURL, {
           method: "PUT",
-          headers: { "Content-Type": file.type },
+          headers: { "Content-Type": file.type || "application/octet-stream" },
           body: file,
         });
 
         console.log("Upload response status:", uploadRes.status);
 
         if (!uploadRes.ok) {
-          console.log(await uploadRes.text());
-          throw new Error("Failed to upload image");
+          const errText = await uploadRes.text().catch(() => "");
+          throw new Error(
+            `Failed to upload image: ${uploadRes.status} ${errText}`,
+          );
         }
 
-        await addDoc(collection(db, "images"), {
-          groupId,
-          groupName: groupId,
+        const docRef = await addDoc(collection(db, "images"), {
+          groupId: effectiveGroupId,
+          groupName: effectiveGroupId,
           colors: selectedColors.map((c) => c.value),
           productLine: productLine.value,
           roofTags: roofTags.map((r) => r.value),
@@ -169,6 +179,8 @@ export default function UploadPage() {
           timestamp: serverTimestamp(),
         });
 
+        console.log("Metadata saved to Firestore:", docRef.id);
+
         uploaded++;
       }
 
@@ -182,8 +194,9 @@ export default function UploadPage() {
       setSelectedFiles([]);
       setInternalOnly(false);
       setProjectName("");
-    } catch {
-      alert("Upload failed. See console.");
+    } catch (err) {
+      console.error("Upload failed:", err);
+      alert(`Upload failed: ${err.message}`);
     } finally {
       setUploading(false);
     }
