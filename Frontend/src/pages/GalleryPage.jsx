@@ -327,10 +327,17 @@ export default function GalleryPage() {
         const baseName = groupMeta.groupName || groupId;
         const generatedName = `${baseName}_${imgNum}`;
 
-        const { uploadURL, key } = await generateUploadUrl(
-          `${generatedName}${extension}`,
-          file.type || "image/jpeg",
-        );
+        console.debug("Presign request", {
+          groupId,
+          filename: `${generatedName}${extension}`,
+          contentType: file.type || "image/jpeg",
+        });
+
+        const { uploadURL, key } = await generateUploadUrl({
+          groupId,
+          filename: `${generatedName}${extension}`,
+          contentType: file.type || "image/jpeg",
+        });
 
         console.log("Uploading to S3 →", {
           fileName: file.name,
@@ -344,7 +351,7 @@ export default function GalleryPage() {
           );
         });
 
-        await addDoc(collection(db, "images"), {
+        const docRef = await addDoc(collection(db, "images"), {
           groupId,
           groupName: groupMeta.groupName || groupId,
           colors: groupMeta.colors || [],
@@ -360,6 +367,8 @@ export default function GalleryPage() {
           uploadedBy: userEmail,
           timestamp: serverTimestamp(),
         });
+
+        console.log("Metadata saved to Firestore:", docRef.id);
       }
 
       if (groupMeta.docId) {
@@ -370,8 +379,8 @@ export default function GalleryPage() {
         });
       }
     } catch (e) {
-      console.error(e);
-      alert("Failed to upload image(s).");
+      console.error("Failed to upload image(s):", e);
+      alert(`Failed to upload image(s): ${e.message}`);
     }
     setShowProgress(false);
     setAddingPhotos(false);
