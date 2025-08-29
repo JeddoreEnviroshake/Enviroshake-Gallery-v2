@@ -3,8 +3,7 @@ import { Link } from "react-router-dom";
 import Select from "react-select";
 import CreatableSelect from "react-select/creatable";
 import { COLOR_OPTIONS } from "../Constants/colorOptions";
-import { db, auth } from "../services/firebase";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { auth } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { generateUploadUrl } from "../services/api";
 
@@ -22,9 +21,6 @@ const OPTIONS = {
   ],
   countries: ["Canada", "USA", "Caribbean", "Other"],
 };
-
-const toSafeGroupId = (str = "") =>
-  str.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9_-]/g, "");
 
 export default function UploadPage() {
   const [selectedColors, setSelectedColors] = useState([]);
@@ -76,127 +72,96 @@ export default function UploadPage() {
     }
   };
 
+  function toSafeGroupId(name) {
+    if (!name || typeof name !== "string") return "";
+    const base = name
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+    return base ? `${base}_001` : "";
+  }
+
   const groupId = [
     productLine?.value || "—",
     selectedColors[0]?.value || "—",
     toSafeGroupId(projectName) || "—",
   ].join("_");
 
-  const namePreview = `${groupId}_001`;
+  const namePreview = groupId;
 
-  const getFileExt = (fileName) => {
-    if (!fileName) return "";
-    const idx = fileName.lastIndexOf(".");
-    return idx !== -1 ? fileName.substring(idx) : "";
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleUpload = async (e) => {
+    if (e && typeof e.preventDefault === "function") e.preventDefault();
     setMessage("");
-
-    if (
-      !selectedFiles.length ||
-      !productLine ||
-      selectedColors.length === 0 ||
-      !projectName
-    ) {
-      alert("Please select at least one image, product line, one color, and project name.");
-      return;
-    }
-
-    if (!userEmail) {
-      alert("You must be logged in to upload.");
-      return;
-    }
-
     setUploading(true);
-    const effectiveGroupId = groupId || toSafeGroupId(projectName);
-
     try {
-      await addDoc(collection(db, "imageGroups"), {
-        groupId: effectiveGroupId,
-        groupName: effectiveGroupId,
-        colors: selectedColors.map((c) => c.value),
-        productLine: productLine.value,
-        roofTags: roofTags.map((r) => r.value),
-        projectTags: projectTags.map((p) => p.value),
-        countryTags: countryTags.map((c) => c.value),
-        notes,
-        internalOnly,
-        uploadedBy: userEmail,
-        timestamp: serverTimestamp(),
-        imageCount: selectedFiles.length,
-      });
-
-      let uploaded = 0;
-      for (let i = 0; i < selectedFiles.length; ++i) {
-        const file = selectedFiles[i];
-        const extension = getFileExt(file.name);
-        const imgNum = (i + 1).toString().padStart(3, "0");
-        const generatedName = `${effectiveGroupId}_${imgNum}`;
-
-        console.debug("Presign request", {
-          groupId: effectiveGroupId,
-          filename: `${generatedName}${extension}`,
-          contentType: file.type,
-        });
-
-        const { uploadURL, key } = await generateUploadUrl({
-          groupId: effectiveGroupId,
-          filename: `${generatedName}${extension}`,
-          contentType: file.type,
-        });
-
-        const uploadRes = await fetch(uploadURL, {
-          method: "PUT",
-          headers: { "Content-Type": file.type || "application/octet-stream" },
-          body: file,
-        });
-
-        console.log("Upload response status:", uploadRes.status);
-
-        if (!uploadRes.ok) {
-          const errText = await uploadRes.text().catch(() => "");
-          throw new Error(
-            `Failed to upload image: ${uploadRes.status} ${errText}`,
-          );
-        }
-
-        const docRef = await addDoc(collection(db, "images"), {
-          groupId: effectiveGroupId,
-          groupName: effectiveGroupId,
-          colors: selectedColors.map((c) => c.value),
-          productLine: productLine.value,
-          roofTags: roofTags.map((r) => r.value),
-          projectTags: projectTags.map((p) => p.value),
-          countryTags: countryTags.map((c) => c.value),
-          notes,
-          projectName,
-          imageName: generatedName,
-          internalOnly,
-          s3Key: key,
-          uploadedBy: userEmail,
-          timestamp: serverTimestamp(),
-        });
-
-        console.log("Metadata saved to Firestore:", docRef.id);
-
-        uploaded++;
+      const { files } = e?.target || {};
+      const filesArr = Array.from(selectedFiles || files || []);
+      if (!filesArr.length) {
+        alert("Please choose at least one image.");
+        return;
       }
 
-      setMessage(`✅ ${uploaded} image${uploaded > 1 ? "s" : ""} uploaded and saved!`);
-      setSelectedColors([]);
-      setProductLine(null);
-      setRoofTags([]);
-      setProjectTags([]);
-      setCountryTags([]);
-      setNotes("");
-      setSelectedFiles([]);
-      setInternalOnly(false);
-      setProjectName("");
+      if (!userEmail) {
+        alert("You must be logged in to upload.");
+        return;
+      }
+
+      let effectiveGroupId = groupId;
+      if (!effectiveGroupId || !effectiveGroupId.trim()) {
+        effectiveGroupId = toSafeGroupId(projectName || "");
+      }
+      if (!effectiveGroupId) {
+        alert("Project Name / Group ID is required.");
+        return;
+      }
+
+      for (const file of filesArr) {
+        console.log("DEBUG upload payload:", {
+          groupId: effectiveGroupId,
+          filename: file.name,
+          contentType: file.type,
+        });
+
+        let presign;
+        try {
+          presign = await generateUploadUrl({
+            groupId: effectiveGroupId,
+            filename: file.name,
+            contentType: file.type || "application/octet-stream",
+          });
+          console.log("DEBUG presign response:", presign);
+        } catch (err) {
+          console.error("UPLOAD ERROR (presign):", err);
+          alert(`Upload failed (presign): ${err?.message || err}`);
+          return;
+        }
+
+        try {
+          const putRes = await fetch(presign.url, {
+            method: "PUT",
+            headers: { "Content-Type": file.type || "application/octet-stream" },
+            body: file,
+          });
+          if (!putRes.ok) {
+            const txt = await putRes.text().catch(() => "");
+            throw new Error(`S3 PUT failed: HTTP ${putRes.status} ${txt || ""}`);
+          }
+          console.log("DEBUG S3 PUT success:", file.name);
+        } catch (err) {
+          console.error("UPLOAD ERROR (S3 PUT):", err);
+          alert(`Upload failed (S3): ${err?.message || err}`);
+          return;
+        }
+      }
+
+      console.log("DEBUG metadata save step for group:", effectiveGroupId);
+      alert("Upload complete.");
+      setMessage("Upload complete.");
     } catch (err) {
-      console.error("Upload failed:", err);
-      alert(`Upload failed: ${err.message}`);
+      console.error("UPLOAD ERROR (outer):", err);
+      alert(`Upload failed: ${err?.message || err}`);
     } finally {
       setUploading(false);
     }
@@ -300,7 +265,7 @@ export default function UploadPage() {
         }}
       >
         <form
-          onSubmit={handleSubmit}
+          onSubmit={handleUpload}
           onDragOver={handleDragOver}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}

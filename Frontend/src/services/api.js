@@ -1,42 +1,5 @@
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
 
-async function fetchJson(url, opts) {
-  const res = await fetch(url, opts);
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`HTTP ${res.status} – ${txt || "request failed"}`);
-  }
-  const ctype = res.headers.get("content-type") || "";
-  if (!ctype.includes("application/json")) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`Expected application/json, got ${ctype}. ${txt}`);
-  }
-  return res.json();
-}
-
-export async function generateUploadUrl(fileName, fileType) {
-  if (!fileName || !fileType) {
-    throw new Error("Missing fileName or fileType");
-  }
-  const body = JSON.stringify({ fileName, fileType });
-  const paths = ["/generate-upload-url", "/presign-upload", "/presign"];
-  let lastErr = null;
-  for (const p of paths) {
-    try {
-      const url = `${API_BASE}${p}`;
-      return await fetchJson(url, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        credentials: "include",
-        body,
-      });
-    } catch (e) {
-      lastErr = e;
-    }
-  }
-  throw lastErr || new Error("All presign paths failed");
-}
-
 export async function downloadMultipleGroups(groupIds) {
   if (!Array.isArray(groupIds) || groupIds.length === 0) {
     throw new Error("Missing groupIds");
