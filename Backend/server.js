@@ -16,8 +16,11 @@ const presignGetRoute = require("./routesPresignGet"); // GET /presign-get
 const app = express();
 
 // Basic middleware
-app.use(cors());               // adjust to a stricter allowlist later for prod
-app.use(express.json());
+app.use(cors({
+  origin: ['http://localhost:5173'],
+  credentials: true,
+}));
+app.use(express.json({ limit: '10mb' }));
 
 // --- quick sanity log (safe) ---
 console.log(
@@ -64,9 +67,7 @@ db.collection("test-connection")
   });
 
 // ---- Health check ----
-app.get("/health", (_req, res) => {
-  res.json({ ok: true, bucket: bucketName, region: process.env.AWS_REGION });
-});
+app.get('/health', (_req, res) => res.type('text').send('ok'));
 
 /**
  * ---------------------------------------------------------------------------
