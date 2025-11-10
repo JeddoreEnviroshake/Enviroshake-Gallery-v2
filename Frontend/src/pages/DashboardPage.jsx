@@ -7,6 +7,7 @@ export default function Dashboard() {
   const [bgIndex, setBgIndex] = useState(0);
   const [fade, setFade] = useState(true);
   const [user, setUser] = useState(null);
+  const [hoveredButton, setHoveredButton] = useState(null);
   const fadeTimeout = useRef(null);
   const navigate = useNavigate();
 
@@ -82,9 +83,14 @@ export default function Dashboard() {
           </p>
           <div style={styles.buttonContainer}>
             <button
-              style={styles.button}
+              style={{
+                ...styles.modeButton,
+                ...(hoveredButton === "gallery" ? styles.modeButtonHover : {}),
+              }}
               onClick={() => navigate("/gallery")}
               title="View your uploaded image groups"
+              onMouseEnter={() => setHoveredButton("gallery")}
+              onMouseLeave={() => setHoveredButton(null)}
             >
               <img
                 src={`${import.meta.env.BASE_URL}icons/icon-camera.png`}
@@ -94,9 +100,14 @@ export default function Dashboard() {
               Photo Gallery
             </button>
             <button
-              style={styles.button}
+              style={{
+                ...styles.modeButton,
+                ...(hoveredButton === "upload" ? styles.modeButtonHover : {}),
+              }}
               onClick={() => navigate("/upload")}
               title="Upload new images to your gallery"
+              onMouseEnter={() => setHoveredButton("upload")}
+              onMouseLeave={() => setHoveredButton(null)}
             >
               <img
                 src={`${import.meta.env.BASE_URL}icons/icon-upload.png`}
@@ -169,19 +180,23 @@ const styles = {
     justifyContent: "center",
     flexWrap: "wrap",
   },
-  button: {
+  modeButton: {
     padding: "0.75rem 1.5rem",
     fontSize: "1rem",
-    backgroundColor: "#09713c",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
+    backgroundColor: "transparent",
+    color: "#0b4827",
+    border: "2px solid rgba(9, 113, 60, 0.35)",
+    borderRadius: "999px",
     cursor: "pointer",
     fontWeight: "bold",
-    transition: "background-color 0.3s ease",
+    transition: "border-color 0.3s ease, color 0.3s ease",
     display: "flex",
     alignItems: "center",
     gap: "0.5rem",
+  },
+  modeButtonHover: {
+    borderColor: "rgba(9, 113, 60, 0.7)",
+    color: "#07502e",
   },
   icon: {
     width: "20px",
